@@ -1,6 +1,6 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { products } from '../Products';
 import { ContactShadows, Environment, Float } from '@react-three/drei';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -92,7 +92,10 @@ const Visuals3D = () => {
               {/* Environment map for beautiful glass reflections */}
               <Environment preset="city" />
               
-              <Carousel activeIndex={activeIndex} rotationTarget={rotationTarget.current} />
+              
+              <Suspense fallback={null}>
+                 <Carousel activeIndex={activeIndex} rotationTarget={rotationTarget.current} />
+              </Suspense>
               
               {/* Ground Shadows aligned to bottom of the pillars */}
               <ContactShadows position={[0, -4.0, 0]} opacity={0.6} scale={25} blur={2.5} far={10} />
