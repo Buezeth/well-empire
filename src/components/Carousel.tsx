@@ -36,13 +36,11 @@ const Carousel = ({ activeIndex, rotationTarget }: { activeIndex: number, rotati
         return (
           <group key={prod.id} position={[x, 0, z]} rotation={[0, angle, 0]}>
             <Pillar />
-            {/* Pass the width and height we defined in Products.ts */}
             <SoapBottle 
               active={activeIndex === i} 
               color={prod.color} 
               image={prod.image} 
-              width={prod.width} 
-              height={prod.height} 
+              // Notice we removed the width and height props here!
             />
           </group>
         );
