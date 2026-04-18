@@ -13,20 +13,20 @@ const Visuals3D = () => {
     const isScrolling = useRef(false);
   
     const nextProduct = () => {
-      if (isScrolling.current) return;
-      isScrolling.current = true;
-      rotationTarget.current -= Math.PI / 2;
-      setActiveIndex((prev) => (prev + 1) % products.length);
-      setTimeout(() => isScrolling.current = false, 1200);
-    };
-  
-    const prevProduct = () => {
-      if (isScrolling.current) return;
-      isScrolling.current = true;
-      rotationTarget.current += Math.PI / 2;
-      setActiveIndex((prev) => (prev - 1 + products.length) % products.length);
-      setTimeout(() => isScrolling.current = false, 1200);
-    };
+    if (isScrolling.current) return;
+    isScrolling.current = true;
+    // Removed rotationTarget logic
+    setActiveIndex((prev) => (prev + 1) % products.length);
+    setTimeout(() => isScrolling.current = false, 600); // reduced timeout to feel snappier
+  };
+
+  const prevProduct = () => {
+    if (isScrolling.current) return;
+    isScrolling.current = true;
+    // Removed rotationTarget logic
+    setActiveIndex((prev) => (prev - 1 + products.length) % products.length);
+    setTimeout(() => isScrolling.current = false, 600);
+  };
   
     useEffect(() => {
       const handleWheel = (e: WheelEvent) => {
@@ -94,7 +94,7 @@ const Visuals3D = () => {
               
               
               <Suspense fallback={null}>
-                 <Carousel activeIndex={activeIndex} rotationTarget={rotationTarget.current} />
+                <Carousel activeIndex={activeIndex} />
               </Suspense>
               
               {/* Ground Shadows aligned to bottom of the pillars */}

@@ -1,50 +1,84 @@
 // src/components/Carousel.tsx
-import { useThree } from '@react-three/fiber';
-import React, { useEffect, useRef } from 'react'
-import * as THREE from 'three'
+import { useFrame, useThree } from '@react-three/fiber';
+import React, { useRef } from 'react';
+import * as THREE from 'three';
 import { products } from '../Products';
 import Pillar from './Pillar';
 import SoapBottle from './SoapBottle';
-import gsap from 'gsap';
 
-const Carousel = ({ activeIndex, rotationTarget }: { activeIndex: number, rotationTarget: number }) => {
+const CarouselItem = ({ product, index, activeIndex, total, isMobile }: any) => {
   const groupRef = useRef<THREE.Group>(null);
-  const { viewport } = useThree();
-  const isMobile = viewport.width < 5;
+  
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+    
+    // 1. Calculate relative distance from the active item
+    let offset = index - activeIndex;
+    
+    // 2. Wrap-around math to keep the infinite loop working
+    if (offset > total / 2) offset -= total;
+    if (offset < -total / 2) offset += total;
 
-  useEffect(() => {
-    if (groupRef.current) {
-      gsap.to(groupRef.current.rotation, {
-        y: rotationTarget,
-        duration: 1.2,
-        ease: "power3.inOut"
-      });
+    // 3. Keep non-active products completely OFFSCREEN
+    // A gap of 15 units pushes them entirely out of the camera's view
+    const spacingX = 15; 
+    const targetX = offset * spacingX;
+    
+    // Drop them down slightly when offscreen just to ensure they are hidden
+    const targetZ = offset === 0 ? 0 : -2;
+    const targetY = offset === 0 ? 0 : -1;
+    
+    const baseScale = isMobile ? 0.6 : 1;
+    const targetScale = offset === 0 ? baseScale : baseScale * 0.8;
+
+    // 4. THE MAGIC TRICK: Prevent "Teleportation" across the screen
+    // If an item wraps around from the far-left to the far-right, 
+    // we instantly snap its position behind the scenes so the user never sees it moving.
+    if (Math.abs(groupRef.current.position.x - targetX) > spacingX * 1.5) {
+      groupRef.current.position.x = targetX;
     }
-  }, [rotationTarget]);
 
-  const radius = isMobile ? 3 : 4.5; 
-  const scale = isMobile ? 0.6 : 1;
-  const posX = isMobile ? 0 : 1;
+    // 5. Smoothly glide the product in/out of the frame
+    const lerpSpeed = delta * 5; 
+    groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, lerpSpeed);
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, lerpSpeed);
+    groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, targetZ, lerpSpeed);
+    groupRef.current.scale.setScalar(
+      THREE.MathUtils.lerp(groupRef.current.scale.x, targetScale, lerpSpeed)
+    );
+  });
 
   return (
-    <group ref={groupRef} position={[posX, -1.5, 0]} scale={scale}>
-      {products.map((prod, i) => {
-        const angle = i * (Math.PI / 2);
-        const x = Math.sin(angle) * radius;
-        const z = Math.cos(angle) * radius;
-        
-        return (
-          <group key={prod.id} position={[x, 0, z]} rotation={[0, angle, 0]}>
-            <Pillar />
-            <SoapBottle 
-              active={activeIndex === i} 
-              color={prod.color} 
-              image={prod.image} 
-              // Notice we removed the width and height props here!
-            />
-          </group>
-        );
-      })}
+    <group ref={groupRef}>
+      <Pillar />
+      <SoapBottle 
+        active={activeIndex === index} 
+        color={product.color} 
+        image={product.image} 
+      />
+    </group>
+  );
+}
+
+const Carousel = ({ activeIndex }: { activeIndex: number }) => {
+  const { viewport } = useThree();
+  const isMobile = viewport.width < 5;
+  
+  // Keep the active product slightly off-center to make room for the typography
+  const posX = isMobile ? 0 : 1.5; 
+
+  return (
+    <group position={[posX, -1.5, 0]}>
+      {products.map((prod, i) => (
+        <CarouselItem 
+          key={prod.id}
+          product={prod}
+          index={i}
+          activeIndex={activeIndex}
+          total={products.length}
+          isMobile={isMobile}
+        />
+      ))}
     </group>
   );
 }

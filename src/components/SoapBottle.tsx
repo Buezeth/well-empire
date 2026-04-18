@@ -4,6 +4,13 @@ import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+
+// interface Texture {
+//   image: HTMLImageElement | ImageBitmap | any; // Adjust based on your use case
+// }
+
+// const texture: Texture = /* your texture source */;
+// const image = texture.image;
 const SoapBottle = ({ active, image }: { active: boolean, color: string, image: string }) => {
   // We use two separate groups now: 
   // One perfectly tracks the camera, the other handles the wobble animation.
@@ -26,8 +33,10 @@ const SoapBottle = ({ active, image }: { active: boolean, color: string, image: 
   // We lock the height to 4.5 so it sits perfectly on the pedestal.
   // We automatically calculate the width based on your actual PNG file's aspect ratio!
   const planeHeight = 4.5;
-  const planeWidth = planeHeight * (texture.image.width / texture.image.height);
 
+  const txtImg: HTMLImageElement | ImageBitmap | any = texture.image
+  const planeWidth = planeHeight * (txtImg.width / txtImg.height);
+  
   useFrame(({ camera, clock }) => {
     if (billboardRef.current) {
       // 3. FLAWLESS Y-AXIS BILLBOARDING
