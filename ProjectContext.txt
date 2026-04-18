@@ -131,52 +131,78 @@ export default function App() {
 
 --- src/components/Carousel.tsx ---
 // src/components/Carousel.tsx
-import { useThree } from '@react-three/fiber';
-import React, { useEffect, useRef } from 'react'
-import * as THREE from 'three'
+import { useFrame, useThree } from '@react-three/fiber';
+import React, { useRef } from 'react';
+import * as THREE from 'three';
 import { products } from '../Products';
 import Pillar from './Pillar';
 import SoapBottle from './SoapBottle';
-import gsap from 'gsap';
 
-const Carousel = ({ activeIndex, rotationTarget }: { activeIndex: number, rotationTarget: number }) => {
+const CarouselItem = ({ product, index, activeIndex, total, isMobile }: any) => {
   const groupRef = useRef<THREE.Group>(null);
-  const { viewport } = useThree();
-  const isMobile = viewport.width < 5;
+  
+  useFrame((state, delta) => {
+    if (!groupRef.current) return;
+    
+    let offset = index - activeIndex;
+    
+    if (offset > total / 2) offset -= total;
+    if (offset < -total / 2) offset += total;
 
-  useEffect(() => {
-    if (groupRef.current) {
-      gsap.to(groupRef.current.rotation, {
-        y: rotationTarget,
-        duration: 1.2,
-        ease: "power3.inOut"
-      });
+    const spacingX = 15; 
+    const targetX = offset * spacingX;
+    
+    const targetZ = offset === 0 ? 0 : -2;
+    const targetY = offset === 0 ? 0 : -1;
+    
+    // 1. INCREASED SCALE: Makes the hero product much larger
+    const baseScale = isMobile ? 0.9 : 1.45; 
+    const targetScale = offset === 0 ? baseScale : baseScale * 0.8;
+
+    if (Math.abs(groupRef.current.position.x - targetX) > spacingX * 1.5) {
+      groupRef.current.position.x = targetX;
     }
-  }, [rotationTarget]);
 
-  const radius = isMobile ? 3 : 4.5; 
-  const scale = isMobile ? 0.6 : 1;
-  const posX = isMobile ? 0 : 1;
+    const lerpSpeed = delta * 5; 
+    groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, lerpSpeed);
+    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, lerpSpeed);
+    groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, targetZ, lerpSpeed);
+    groupRef.current.scale.setScalar(
+      THREE.MathUtils.lerp(groupRef.current.scale.x, targetScale, lerpSpeed)
+    );
+  });
 
   return (
-    <group ref={groupRef} position={[posX, -1.5, 0]} scale={scale}>
-      {products.map((prod, i) => {
-        const angle = i * (Math.PI / 2);
-        const x = Math.sin(angle) * radius;
-        const z = Math.cos(angle) * radius;
-        
-        return (
-          <group key={prod.id} position={[x, 0, z]} rotation={[0, angle, 0]}>
-            <Pillar />
-            <SoapBottle 
-              active={activeIndex === i} 
-              color={prod.color} 
-              image={prod.image} 
-              // Notice we removed the width and height props here!
-            />
-          </group>
-        );
-      })}
+    <group ref={groupRef}>
+      <Pillar />
+      <SoapBottle 
+        active={activeIndex === index} 
+        color={product.color} 
+        image={product.image} 
+      />
+    </group>
+  );
+}
+
+const Carousel = ({ activeIndex }: { activeIndex: number }) => {
+  const { viewport } = useThree();
+  const isMobile = viewport.width < 5;
+  
+  // 2. ADJUSTED POSITION: Brings the product slightly closer to the center
+  const posX = isMobile ? 0 : 0.8; 
+
+  return (
+    <group position={[posX, -2.5, 0]}>
+      {products.map((prod, i) => (
+        <CarouselItem 
+          key={prod.id}
+          product={prod}
+          index={i}
+          activeIndex={activeIndex}
+          total={products.length}
+          isMobile={isMobile}
+        />
+      ))}
     </group>
   );
 }
@@ -219,6 +245,13 @@ import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 
+
+// interface Texture {
+//   image: HTMLImageElement | ImageBitmap | any; // Adjust based on your use case
+// }
+
+// const texture: Texture = /* your texture source */;
+// const image = texture.image;
 const SoapBottle = ({ active, image }: { active: boolean, color: string, image: string }) => {
   // We use two separate groups now: 
   // One perfectly tracks the camera, the other handles the wobble animation.
@@ -241,8 +274,10 @@ const SoapBottle = ({ active, image }: { active: boolean, color: string, image: 
   // We lock the height to 4.5 so it sits perfectly on the pedestal.
   // We automatically calculate the width based on your actual PNG file's aspect ratio!
   const planeHeight = 4.5;
-  const planeWidth = planeHeight * (texture.image.width / texture.image.height);
 
+  const txtImg: HTMLImageElement | ImageBitmap | any = texture.image
+  const planeWidth = planeHeight * (txtImg.width / txtImg.height);
+  
   useFrame(({ camera, clock }) => {
     if (billboardRef.current) {
       // 3. FLAWLESS Y-AXIS BILLBOARDING
@@ -325,20 +360,20 @@ const Visuals3D = () => {
     const isScrolling = useRef(false);
   
     const nextProduct = () => {
-      if (isScrolling.current) return;
-      isScrolling.current = true;
-      rotationTarget.current -= Math.PI / 2;
-      setActiveIndex((prev) => (prev + 1) % products.length);
-      setTimeout(() => isScrolling.current = false, 1200);
-    };
-  
-    const prevProduct = () => {
-      if (isScrolling.current) return;
-      isScrolling.current = true;
-      rotationTarget.current += Math.PI / 2;
-      setActiveIndex((prev) => (prev - 1 + products.length) % products.length);
-      setTimeout(() => isScrolling.current = false, 1200);
-    };
+    if (isScrolling.current) return;
+    isScrolling.current = true;
+    // Removed rotationTarget logic
+    setActiveIndex((prev) => (prev + 1) % products.length);
+    setTimeout(() => isScrolling.current = false, 600); // reduced timeout to feel snappier
+  };
+
+  const prevProduct = () => {
+    if (isScrolling.current) return;
+    isScrolling.current = true;
+    // Removed rotationTarget logic
+    setActiveIndex((prev) => (prev - 1 + products.length) % products.length);
+    setTimeout(() => isScrolling.current = false, 600);
+  };
   
     useEffect(() => {
       const handleWheel = (e: WheelEvent) => {
@@ -406,7 +441,7 @@ const Visuals3D = () => {
               
               
               <Suspense fallback={null}>
-                 <Carousel activeIndex={activeIndex} rotationTarget={rotationTarget.current} />
+                <Carousel activeIndex={activeIndex} />
               </Suspense>
               
               {/* Ground Shadows aligned to bottom of the pillars */}
