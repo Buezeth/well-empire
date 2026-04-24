@@ -1,6 +1,6 @@
 --- START OF FILE ProjectContext.txt ---
 -
---- Folder Structure ---
+--- Folder Structure ----
 public/
 src/
   components/
