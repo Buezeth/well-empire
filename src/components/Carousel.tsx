@@ -42,7 +42,7 @@ const CarouselItem = ({ product, index, activeIndex, total, isMobile }: any) => 
 
   return (
     <group ref={groupRef}>
-      <Pillar />
+      {/* <Pillar /> */}
       <SoapBottle 
         active={activeIndex === index} 
         color={product.color} 
