@@ -20,29 +20,30 @@ const SoapBottle = ({ active, color, image, depthImage }: { active: boolean, col
     depthTexture.anisotropy = gl.capabilities.getMaxAnisotropy();
     depthTexture.minFilter = THREE.LinearMipMapLinearFilter;
     depthTexture.needsUpdate = true;
-  },[texture, depthTexture, gl]);
+  }, [texture, depthTexture, gl]);
 
   const planeHeight = 4.5;
   const txtImg: any = texture.image;
-  const planeWidth = planeHeight * (txtImg.width / txtImg.height);
+  const aspectRatio = txtImg ? txtImg.width / txtImg.height : 1;
+  const planeWidth = planeHeight * aspectRatio;
   
-  // 1. CREATE BASE CURVE: Solves the "low quality 2D lighting" because we compute actual 3D normals!
+  // 1. CREATE SOLID 3D VOLUME CURVE (Tapers to 0 at edges to seal the bottle)
   const geometry = useMemo(() => {
-    const geo = new THREE.PlaneGeometry(planeWidth, planeHeight, 128, 128);
+    // 32x32 vertices is optimal for a smooth curve; bump mapping handles the high-detail shading
+    const geo = new THREE.PlaneGeometry(planeWidth, planeHeight, 32, 32);
     const pos = geo.attributes.position;
     
-    // We physically curve the plane so it already mimics a cylinder shape
-    const baseDepth = 0.4; 
+    // Increased depth to give a physically rounded, solid-looking bottle
+    const baseDepth = 1; 
     
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const normX = x / (planeWidth / 2); 
-      // Cosine wave creates a smooth, rounded lens shape bridging edge-to-edge
+      // Cosine wave curves the bottle outwards in the center, tapering to 0 at the edges
       const z = Math.cos(normX * (Math.PI / 2)) * baseDepth; 
       pos.setZ(i, z);
     }
     
-    // CRITICAL: Compute normals so reflections wrap around the 3D curve naturally
     geo.computeVertexNormals(); 
     return geo;
   }, [planeWidth, planeHeight]);
@@ -58,8 +59,6 @@ const SoapBottle = ({ active, color, image, depthImage }: { active: boolean, col
     if (wobbleRef.current) {
       if (active) {
         const time = clock.elapsedTime;
-        // SLOWED DOWN: Changed time multipliers from (2 & 3) to (0.6 & 0.4) 
-        // This creates a slow, luxurious anti-gravity drift
         wobbleRef.current.rotation.y = Math.sin(time * 0.6) * 0.08;
         wobbleRef.current.rotation.x = Math.cos(time * 0.4) * 0.04;
       } else {
@@ -73,9 +72,9 @@ const SoapBottle = ({ active, color, image, depthImage }: { active: boolean, col
 
   return (
     <Float 
-      speed={active ? 1.5 : 0} // Reduced from 2 to 1.5
+      speed={active ? 1.5 : 0} 
       rotationIntensity={0} 
-      floatIntensity={active ? 0.15 : 0} // Reduced float distance
+      floatIntensity={active ? 0.15 : 0} 
       floatingRange={[-0.05, 0.05]}
     >
       <group ref={billboardRef} position={[0, 2.45, 0]}>
@@ -85,31 +84,37 @@ const SoapBottle = ({ active, color, image, depthImage }: { active: boolean, col
           <mesh geometry={geometry}>
             <meshPhysicalMaterial 
               map={texture}
+              // We use a bump map for clean, high-resolution 3D reflections and surface details
+              bumpMap={depthTexture}
+              bumpScale={0.18}
+              // We use a very subtle displacement just to give the labels a tiny physical depth pop
               displacementMap={depthTexture}
-              displacementScale={0.8} // HIGH displacement for massive 3D pop!
+              displacementScale={0.06}
               transparent={true}
-              alphaTest={0.05} // Trims out tiny ghosting artifacts on the edge
-              roughness={0.1}
-              metalness={0.1}
+              alphaTest={0.05} 
+              roughness={0.12}
+              metalness={0.05}
               clearcoat={1.0}
-              clearcoatRoughness={0.05}
-              envMapIntensity={2.5} // Cranks up the city reflections so it looks like shiny glass/plastic
+              clearcoatRoughness={0.08}
+              envMapIntensity={3.0} // Emphasizes the city environment reflection map
             />
           </mesh>
 
-          {/* 3. BACK FACE (Flipped) - Creates a fully enclosed 3D object and perfectly centers the wobble! */}
+          {/* 3. BACK FACE (Flipped) */}
           <mesh geometry={geometry} rotation={[0, Math.PI, 0]}>
             <meshPhysicalMaterial 
               map={texture}
+              bumpMap={depthTexture}
+              bumpScale={0.18}
               displacementMap={depthTexture}
-              displacementScale={0.8}
+              displacementScale={0.06}
               transparent={true}
               alphaTest={0.05}
-              roughness={0.1}
-              metalness={0.1}
+              roughness={0.12}
+              metalness={0.05}
               clearcoat={1.0}
-              clearcoatRoughness={0.05}
-              envMapIntensity={2.5}
+              clearcoatRoughness={0.08}
+              envMapIntensity={3.0}
             />
           </mesh>
 
@@ -119,7 +124,6 @@ const SoapBottle = ({ active, color, image, depthImage }: { active: boolean, col
   );
 }
 
-// 4. PRELOAD TEXTURES: Stops the components from taking a long time to load and pop-in!
 products.forEach((product) => {
   useTexture.preload([product.image, product.depthImage]);
 });

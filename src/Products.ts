@@ -7,8 +7,8 @@ export const products =[
     desc: "For multi-purpose cleaning - 1L", 
     color: "#2563eb", 
     bgColor: "#0A1024", 
-    image: "/bottle-divine.png", // Just your image is needed!
-    depthImage: "/bottle-divine-depth.png"
+    image: "/Divin Cleanser.png", // Just your image is needed!
+    depthImage: "/Divin Cleanser Depth.png"
   },
   { 
     id: 1, 
