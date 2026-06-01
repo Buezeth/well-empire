@@ -16,8 +16,8 @@ export const products =[
     desc: "Gentle foaming hand soap - 500ml", 
     color: "#dc2626", 
     bgColor: "#240A0A", 
-    image: "/bottle-aura.png",
-    depthImage: "/bottle-divine-depth.png"
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depth.png"
   },
   { 
     id: 2, 
@@ -25,8 +25,8 @@ export const products =[
     desc: "Overnight restorative wash - 250ml", 
     color: "#16a34a", 
     bgColor: "#0A2412", 
-    image: "/bottle-lunar.png",
-    depthImage: "/bottle-divine-depth.png"
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depth.png"
   },
   { 
     id: 3, 
@@ -34,7 +34,7 @@ export const products =[
     desc: "Exfoliating body polish - 400g", 
     color: "#9333ea", 
     bgColor: "#1A0A24", 
-    image: "/bottle-solar.png",
-    depthImage: "/bottle-divine-depth.png"
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depth.png"
   },
 ];
