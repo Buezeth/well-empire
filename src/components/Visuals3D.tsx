@@ -62,15 +62,10 @@ const Visuals3D = () => {
           </AnimatePresence>
         </div>
 
-        {/* High Performance WebGL Depth Map Carousel */}
+        {/* Depth Map Parallax Area */}
         <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden pointer-events-none">
           <div className="relative w-full h-[65vh] max-w-5xl flex items-center justify-center">
             {products.map((product, i) => {
-              let offset = i - activeIndex;
-              const total = products.length;
-              if (offset > total / 2) offset -= total;
-              if (offset < -total / 2) offset += total;
-
               const isActive = i === activeIndex;
 
               return (
@@ -82,10 +77,10 @@ const Visuals3D = () => {
                     height: '520px',
                   }}
                   animate={{
-                    x: `${offset * 125}%`,
                     y: isActive ? -10 : 40,
                     scale: isActive ? 1.2 : 0.75,
-                    opacity: isActive ? 1 : 0.25,
+                    // Completely hide non-active bottles in the background
+                    opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
                   }}
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}

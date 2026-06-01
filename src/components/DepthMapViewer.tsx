@@ -14,32 +14,40 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
   const texturesRef = useRef<{ image: WebGLTexture | null; depth: WebGLTexture | null }>({ image: null, depth: null });
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
-  const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
   const [aspectRatio, setAspectRatio] = useState(1);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: true });
+    // Use premultipliedAlpha: false to correctly render PNG straight transparency
+    const gl = canvas.getContext('webgl', { 
+      alpha: true, 
+      premultipliedAlpha: false,
+      antialias: true 
+    });
     if (!gl) {
       console.error('WebGL is not supported in this browser.');
       return;
     }
     glRef.current = gl;
 
-    // Vertex Shader: Maps normalized coordinates and aligns image space
+    // Enable WebGL alpha blending
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    // Vertex Shader
     const vsSource = `
       attribute vec2 position;
       varying vec2 vUv;
       void main() {
         vUv = position * 0.5 + 0.5;
-        vUv.y = 1.0 - vUv.y; // Flip Y for WebGL texture alignment
+        vUv.y = 1.0 - vUv.y; // Match standard texture coordinates
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `;
 
-    // Fragment Shader: Reads the depth map and displaces coordinates
+    // Fragment Shader
     const fsSource = `
       precision mediump float;
       varying vec2 vUv;
@@ -48,14 +56,21 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       uniform vec2 uOffset;
       
       void main() {
-        // Read depth map (red channel)
+        // Sample depth map
         float depth = texture2D(uDepth, vUv).r;
         
-        // Displace coordinate based on depth and interactive offset
-        vec2 displacement = uOffset * (depth * 0.05);
+        // Calculate displacement offset
+        vec2 displacement = uOffset * (depth * 0.06);
         
-        // Sample the color from the shifted coordinates
-        gl_FragColor = texture2D(uImage, vUv + displacement);
+        // Sample image color at displaced coordinates
+        vec4 color = texture2D(uImage, vUv + displacement);
+        
+        // Hard discard of transparent pixels to prevent rectangular bounding box artifact
+        if (color.a < 0.05) {
+          discard;
+        }
+        
+        gl_FragColor = color;
       }
     `;
 
@@ -87,7 +102,6 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     }
     programRef.current = program;
 
-    // Create a simple quad covering the WebGL viewport
     const vertices = new Float32Array([
       -1, -1,
        1, -1,
@@ -119,7 +133,6 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     const depthTex = createTexture();
     texturesRef.current = { image: imageTex, depth: depthTex };
 
-    // Loads images and sets texture units
     const loadTextureImage = (url: string, texture: WebGLTexture) => {
       return new Promise<void>((resolve) => {
         const img = new Image();
@@ -152,36 +165,11 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Interactive cursor tracking for parallax depth shifts
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!active) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width - 0.5; 
-      const y = (e.clientY - rect.top) / rect.height - 0.5; 
-      mouseRef.current.targetX = x;
-      mouseRef.current.targetY = y;
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-
-    let lastTime = 0;
     const render = (time = 0) => {
-      lastTime = time;
-
-      const ease = 0.08;
-      
-      if (active) {
-        // Follow the mouse positions smoothly
-        mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * ease;
-        mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * ease;
-      } else {
-        // Gentle automated drifting motion for background elements
-        const t = time * 0.001;
-        mouseRef.current.targetX = Math.sin(t * 0.5) * 0.08;
-        mouseRef.current.targetY = Math.cos(t * 0.4) * 0.05;
-        mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.05;
-        mouseRef.current.y += (mouseRef.current.targetY - mouseRef.current.y) * 0.05;
-      }
+      // Automatic drift orbit cycle to simulate dynamic 3D rotational wobble
+      const t = time * 0.0012; 
+      const targetX = Math.sin(t) * 0.28;
+      const targetY = Math.cos(t * 1.4) * 0.12;
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
@@ -196,7 +184,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       gl.bindTexture(gl.TEXTURE_2D, texturesRef.current.depth);
       gl.uniform1i(gl.getUniformLocation(program, 'uDepth'), 1);
 
-      gl.uniform2f(gl.getUniformLocation(program, 'uOffset'), mouseRef.current.x, mouseRef.current.y);
+      gl.uniform2f(gl.getUniformLocation(program, 'uOffset'), targetX, targetY);
 
       gl.drawArrays(gl.TRIANGLES, 0, 6);
 
@@ -207,23 +195,22 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      window.removeEventListener('mousemove', handleMouseMove);
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       gl.deleteBuffer(buffer);
       gl.deleteTexture(imageTex);
       gl.deleteTexture(depthTex);
       gl.deleteProgram(program);
     };
-  }, [image, depthImage, active]);
+  }, [image, depthImage]);
 
   return (
     <div 
-      className="w-full h-full flex items-center justify-center transition-transform duration-300"
+      className="w-full h-full flex items-center justify-center pointer-events-none"
       style={{ aspectRatio: `${aspectRatio}` }}
     >
       <canvas 
         ref={canvasRef} 
-        className="w-full h-full object-contain pointer-events-auto"
+        className="w-full h-full object-contain pointer-events-none"
       />
     </div>
   );
