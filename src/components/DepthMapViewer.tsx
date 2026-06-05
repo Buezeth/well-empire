@@ -20,6 +20,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Use default premultipliedAlpha: true to match browser composite expectation
     const gl = canvas.getContext('webgl', { 
       alpha: true, 
       premultipliedAlpha: false,
@@ -31,8 +32,9 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     }
     glRef.current = gl;
 
+    // Enable alpha blending and use the correct premultiplied blending function
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     // Vertex Shader
     const vsSource = `
@@ -45,7 +47,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       }
     `;
 
-    // Fragment Shader with multi-tap depth smoothing to prevent text jaggedness
+    // Fragment Shader: Smooths boundaries and outputs premultiplied alpha
     const fsSource = `
       precision mediump float;
       varying vec2 vUv;
@@ -53,10 +55,9 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       uniform sampler2D uDepth;
       uniform vec2 uOffset;
       
-      // Smooths high-frequency label bumps by averaging local depth samples
       float getSmoothedDepth(vec2 uv) {
         float depthSum = 0.0;
-        const float blurStep = 0.005; // Smoothing radius
+        const float blurStep = 0.022;
         
         depthSum += texture2D(uDepth, uv + vec2(-blurStep, -blurStep)).r;
         depthSum += texture2D(uDepth, uv + vec2(0.0, -blurStep)).r;
@@ -72,18 +73,22 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       }
 
       void main() {
+        // Sample original image to establish layout boundary
+        vec4 originalColor = texture2D(uImage, vUv);
+        
         float depth = getSmoothedDepth(vUv);
         
-        // Gentle, high-fidelity displacement
-        vec2 displacement = uOffset * (depth * 0.04);
+        // Scale down coordinate shifting at the transparent margins
+        float edgeDamp = originalColor.a * originalColor.a;
+        vec2 displacement = uOffset * (depth * 0.035) * edgeDamp;
         
         vec4 color = texture2D(uImage, vUv + displacement);
         
-        if (color.a < 0.05) {
-          discard;
-        }
+        // Clean anti-aliased alpha boundary
+        color.a = min(color.a, originalColor.a);
         
-        gl_FragColor = color;
+        // Output premultiplied alpha (RGB multiplied by alpha) to match the WebGL compositor settings
+        gl_FragColor = vec4(color.rgb * color.a, color.a);
       }
     `;
 
@@ -169,17 +174,20 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       render();
     });
 
-    const resizeCanvas = () => {
+    // ResizeObserver tracks actual visual bounds on layout or ratio changes
+    const resizeObserver = new ResizeObserver(() => {
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = canvas.clientWidth * dpr;
-      canvas.height = canvas.clientHeight * dpr;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (width > 0 && height > 0) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+    });
+    resizeObserver.observe(canvas);
 
     const render = (time = 0) => {
-      // Subtle float motion parameters
       const t = time * 0.0012; 
       const targetX = Math.sin(t) * 0.15;
       const targetY = Math.cos(t * 1.3) * 0.06;
@@ -207,7 +215,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     render();
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      resizeObserver.disconnect();
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       gl.deleteBuffer(buffer);
       gl.deleteTexture(imageTex);
@@ -218,7 +226,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
 
   return (
     <div 
-      className="w-full h-full flex items-center justify-center pointer-events-none"
+      className="h-full max-h-full max-w-full flex items-center justify-center pointer-events-none"
       style={{ aspectRatio: `${aspectRatio}` }}
     >
       <canvas 

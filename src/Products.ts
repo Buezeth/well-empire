@@ -12,21 +12,21 @@ export const products =[
   },
   { 
     id: 1, 
-    title: "AURA WASH", 
+    title: "GENTLE BLISS", 
     desc: "Gentle foaming hand soap - 500ml", 
     color: "#dc2626", 
-    bgColor: "#240A0A", 
-    image: "/Divin Cleanser.png",
-    depthImage: "/Divin Cleanser Depth.png"
+    bgColor: "#5a374f", 
+    image: "/Gentle Bliss.png",
+    depthImage: "/Gentle Bliss Depth.png"
   },
   { 
     id: 2, 
-    title: "LUNAR ELIXIR", 
-    desc: "Overnight restorative wash - 250ml", 
+    title: "PUSBA", 
+    desc: "Eau de Javel - 250ml", 
     color: "#16a34a", 
     bgColor: "#0A2412", 
-    image: "/Divin Cleanser.png",
-    depthImage: "/Divin Cleanser Depth.png"
+    image: "/PUSBA.png",
+    depthImage: "/PUSBA Depth.png"
   },
   { 
     id: 3, 

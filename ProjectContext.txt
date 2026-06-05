@@ -234,6 +234,240 @@ const Carousel = ({ activeIndex }: { activeIndex: number }) => {
 
 export default Carousel;
 
+--- src/components/DepthMapViewer.tsx ---
+// src/components/DepthMapViewer.tsx
+import React, { useEffect, useRef, useState } from 'react';
+
+interface DepthMapViewerProps {
+  image: string;
+  depthImage: string;
+  active: boolean;
+  color: string;
+}
+
+const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, active, color }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const requestRef = useRef<number | null>(null);
+  const texturesRef = useRef<{ image: WebGLTexture | null; depth: WebGLTexture | null }>({ image: null, depth: null });
+  const glRef = useRef<WebGLRenderingContext | null>(null);
+  const programRef = useRef<WebGLProgram | null>(null);
+  const [aspectRatio, setAspectRatio] = useState(1);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const gl = canvas.getContext('webgl', { 
+      alpha: true, 
+      premultipliedAlpha: false,
+      antialias: true 
+    });
+    if (!gl) {
+      console.error('WebGL is not supported in this browser.');
+      return;
+    }
+    glRef.current = gl;
+
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    // Vertex Shader
+    const vsSource = `
+      attribute vec2 position;
+      varying vec2 vUv;
+      void main() {
+        vUv = position * 0.5 + 0.5;
+        vUv.y = 1.0 - vUv.y;
+        gl_Position = vec4(position, 0.0, 1.0);
+      }
+    `;
+
+    // Fragment Shader: Broadened multi-tap depth blur to remove local text distortion
+    const fsSource = `
+      precision mediump float;
+      varying vec2 vUv;
+      uniform sampler2D uImage;
+      uniform sampler2D uDepth;
+      uniform vec2 uOffset;
+      
+      // Smooths high-frequency local detail by averaging depth maps over a wide area
+      float getSmoothedDepth(vec2 uv) {
+        float depthSum = 0.0;
+        const float blurStep = 0.022; // Broadened sampling step for a smoother cylinder shape
+        
+        depthSum += texture2D(uDepth, uv + vec2(-blurStep, -blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(0.0, -blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(blurStep, -blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(-blurStep, 0.0)).r;
+        depthSum += texture2D(uDepth, uv + vec2(0.0, 0.0)).r;
+        depthSum += texture2D(uDepth, uv + vec2(blurStep, 0.0)).r;
+        depthSum += texture2D(uDepth, uv + vec2(-blurStep, blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(0.0, blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(blurStep, blurStep)).r;
+        
+        return depthSum / 9.0;
+      }
+
+      void main() {
+        float depth = getSmoothedDepth(vUv);
+        
+        // Balanced, subtle displacement factor to stabilize text
+        vec2 displacement = uOffset * (depth * 0.035);
+        
+        vec4 color = texture2D(uImage, vUv + displacement);
+        
+        if (color.a < 0.05) {
+          discard;
+        }
+        
+        gl_FragColor = color;
+      }
+    `;
+
+    const compileShader = (source: string, type: number) => {
+      const shader = gl.createShader(type);
+      if (!shader) return null;
+      gl.shaderSource(shader, source);
+      gl.compileShader(shader);
+      if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error('Shader compilation error:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+      }
+      return shader;
+    };
+
+    const vs = compileShader(vsSource, gl.VERTEX_SHADER);
+    const fs = compileShader(fsSource, gl.FRAGMENT_SHADER);
+    if (!vs || !fs) return;
+
+    const program = gl.createProgram();
+    if (!program) return;
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+      console.error('Program link error:', gl.getProgramInfoLog(program));
+      return;
+    }
+    programRef.current = program;
+
+    const vertices = new Float32Array([
+      -1, -1,
+       1, -1,
+      -1,  1,
+      -1,  1,
+       1, -1,
+       1,  1,
+    ]);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    const positionLoc = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(positionLoc);
+    gl.vertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const createTexture = () => {
+      const tex = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      return tex;
+    };
+
+    const imageTex = createTexture();
+    const depthTex = createTexture();
+    texturesRef.current = { image: imageTex, depth: depthTex };
+
+    const loadTextureImage = (url: string, texture: WebGLTexture) => {
+      return new Promise<void>((resolve) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+          if (texture === imageTex) {
+            setAspectRatio(img.width / img.height);
+          }
+          resolve();
+        };
+        img.src = url;
+      });
+    };
+
+    Promise.all([
+      loadTextureImage(image, imageTex!),
+      loadTextureImage(depthImage, depthTex!)
+    ]).then(() => {
+      render();
+    });
+
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.clientWidth * dpr;
+      canvas.height = canvas.clientHeight * dpr;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    };
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const render = (time = 0) => {
+      const t = time * 0.0012; 
+      const targetX = Math.sin(t) * 0.15;
+      const targetY = Math.cos(t * 1.3) * 0.06;
+
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+
+      gl.useProgram(program);
+
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texturesRef.current.image);
+      gl.uniform1i(gl.getUniformLocation(program, 'uImage'), 0);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, texturesRef.current.depth);
+      gl.uniform1i(gl.getUniformLocation(program, 'uDepth'), 1);
+
+      gl.uniform2f(gl.getUniformLocation(program, 'uOffset'), targetX, targetY);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+      requestRef.current = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      gl.deleteBuffer(buffer);
+      gl.deleteTexture(imageTex);
+      gl.deleteTexture(depthTex);
+      gl.deleteProgram(program);
+    };
+  }, [image, depthImage]);
+
+  return (
+    <div 
+      // Changed from w-full h-full to flex-based scaling that respects the aspect ratio rule
+      className="h-full max-h-full max-w-full flex items-center justify-center pointer-events-none"
+      style={{ aspectRatio: `${aspectRatio}` }}
+    >
+      <canvas 
+        ref={canvasRef} 
+        className="w-full h-full object-contain pointer-events-none"
+      />
+    </div>
+  );
+};
+
+export default DepthMapViewer;
+
 --- src/components/Pillar.tsx ---
 import React from 'react'
 
@@ -397,218 +631,211 @@ products.forEach((product) => {
 export default SoapBottle;
 
 --- src/components/Visuals3D.tsx ---
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import * as THREE from 'three';
-import React, { Suspense, useEffect, useRef, useState } from 'react';
+// src/components/Visuals3D.tsx
+import React, { useEffect, useRef, useState } from 'react';
 import { products } from '../Products';
-import { ContactShadows, Environment, Float } from '@react-three/drei';
 import { AnimatePresence, motion } from 'framer-motion';
-import Carousel from './Carousel';
+import DepthMapViewer from './DepthMapViewer';
 import { ChevronLeft, ChevronRight, Menu, ShoppingCart } from 'lucide-react';
 
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
-    const rotationTarget = useRef(0);
-    const isScrolling = useRef(false);
+  const isScrolling = useRef(false);
+  const image = '/imge'
   
-    const nextProduct = () => {
+  const nextProduct = () => {
     if (isScrolling.current) return;
     isScrolling.current = true;
-    // Removed rotationTarget logic
     setActiveIndex((prev) => (prev + 1) % products.length);
-    setTimeout(() => isScrolling.current = false, 600); // reduced timeout to feel snappier
+    setTimeout(() => isScrolling.current = false, 500);
   };
 
   const prevProduct = () => {
     if (isScrolling.current) return;
     isScrolling.current = true;
-    // Removed rotationTarget logic
     setActiveIndex((prev) => (prev - 1 + products.length) % products.length);
-    setTimeout(() => isScrolling.current = false, 600);
+    setTimeout(() => isScrolling.current = false, 500);
   };
   
-    useEffect(() => {
-      const handleWheel = (e: WheelEvent) => {
-        if (e.deltaY > 50) nextProduct();
-        else if (e.deltaY < -50) prevProduct();
-      };
-      window.addEventListener('wheel', handleWheel);
-      return () => window.removeEventListener('wheel', handleWheel);
-    }, []);
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY > 50) nextProduct();
+      else if (e.deltaY < -50) prevProduct();
+    };
+    window.addEventListener('wheel', handleWheel);
+    return () => window.removeEventListener('wheel', handleWheel);
+  }, [activeIndex]);
   
-    return (
-      <div className="w-screen h-screen bg-black md:p-4 flex items-center justify-center overflow-hidden font-sans">
+  return (
+    <div className="w-screen h-screen bg-black md:p-4 flex items-center justify-center overflow-hidden font-sans">
+      
+      {/* Dynamic Background Container */}
+      <motion.main 
+        initial={{ backgroundColor: products[0].bgColor }}
+        animate={{ backgroundColor: products[activeIndex].bgColor }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+        className="relative w-full h-full md:rounded-4xl overflow-hidden shadow-2xl"
+      >
         
-        {/* Dynamic Background Container */}
-        <motion.main 
-          initial={{ backgroundColor: products[0].bgColor }}
-          animate={{ backgroundColor: products[activeIndex].bgColor }}
-          transition={{ duration: 1.5, ease: "easeInOut" }}
-          className="relative w-full h-full md:rounded-4xl overflow-hidden shadow-2xl"
-        >
+        {/* Soft Center Glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.65)_100%)] pointer-events-none z-10"></div>
+
+        {/* Giant Background Typography */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden mix-blend-overlay opacity-30">
+          <AnimatePresence mode="wait">
+            <motion.h1 
+              key={activeIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
+              className="text-[30vw] font-display text-white whitespace-nowrap select-none leading-none tracking-tighter"
+            >
+              {products[activeIndex].title.split(' ')[0]}
+            </motion.h1>
+          </AnimatePresence>
+        </div>
+
+        {/* Responsive Parallax Area */}
+        <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden pointer-events-none">
+          <div className="relative w-full h-[75vh] max-w-5xl flex items-center justify-center">
+            {products.map((product, i) => {
+              const isActive = i === activeIndex;
+
+              return (
+                <motion.div
+                  key={product.id}
+                  style={{
+                    position: 'absolute',
+                  }}
+                  animate={{
+                    y: isActive ? -10 : 40,
+                    scale: isActive ? 1.35 : 0.75, // Scaled up active bottle for dynamic prominence
+                    opacity: isActive ? 1 : 0.0, 
+                    zIndex: isActive ? 10 : 1,
+                  }}
+                  transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                  // Dynamically scales container dimensions on different devices
+                  className="w-[85vw] md:w-[45vw] h-[60vh] md:h-[80vh] max-w-[450px] max-h-[750px] flex items-center justify-center pointer-events-auto"
+                >
+                  <DepthMapViewer
+                    image={product.image}
+                    depthImage={product.depthImage}
+                    active={isActive}
+                    color={product.color}
+                  />
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* UI Layer */}
+        <div className="absolute inset-0 z-20 pointer-events-none p-6 md:p-12 flex flex-col justify-between">
           
-          {/* Soft Center Glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)] pointer-events-none z-10"></div>
-  
-          {/* Giant Background Typography */}
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden mix-blend-overlay opacity-30">
-            <AnimatePresence mode="wait">
-              <motion.h1 
-                key={activeIndex}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 1.1 }}
-                transition={{ duration: 1.5, ease: "easeInOut" }}
-                className="text-[30vw] font-display text-white whitespace-nowrap select-none leading-none tracking-tighter"
+          {/* Top Bar */}
+          <div className="flex justify-between items-start w-full">
+            <div className="flex items-center gap-4">
+              <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center font-bold text-xl pointer-events-auto cursor-pointer">
+                W
+              </div>
+              <div className="font-sans text-white text-lg font-bold tracking-widest pointer-events-auto cursor-pointer hidden md:block">
+                WELL EMPIRE
+              </div>
+            </div>
+            
+            <div className="hidden md:flex items-center space-x-6 pointer-events-auto">
+              <span className="font-mono text-xs tracking-[0.2em] text-white/60 hover:text-white transition-colors cursor-pointer">STORE</span>
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-xs tracking-[0.2em]">CART</span>
+                <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors">
+                  <ShoppingCart size={14} />
+                </div>
+                <span className="font-mono text-sm font-medium">$45.00</span>
+              </div>
+            </div>
+            
+            <div className="md:hidden pointer-events-auto cursor-pointer">
+              <Menu size={24} className="text-white" />
+            </div>
+          </div>
+
+          {/* Middle Right Nav (Vertical) */}
+          <div className="hidden md:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col space-y-12 pointer-events-auto">
+            {['STORE', 'CLEANSERS', 'NFTS'].map((item, idx) => (
+              <span 
+                key={item} 
+                className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer ${idx === 1 ? 'text-white' : 'text-white/40 hover:text-white/80'}`} 
+                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
               >
-                {products[activeIndex].title.split(' ')[0]}
-              </motion.h1>
+                {item}
+              </span>
+            ))}
+          </div>
+
+          {/* Bottom Left Product Info */}
+          <div className="w-full md:w-1/2 pointer-events-auto absolute bottom-24 md:bottom-12 left-6 md:left-12 text-left">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeIndex}
+                initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              >
+                <div className="font-mono text-xs text-white/50 tracking-[0.2em] mb-4">
+                  {(activeIndex + 1).toString().padStart(3, '0')}
+                </div>
+                <h2 className="font-display text-6xl md:text-[100px] leading-[0.85] tracking-tight text-white mb-6 uppercase">
+                  {products[activeIndex].title.split(' ').map((word, i) => (
+                    <span key={i} className="block">{word}</span>
+                  ))}
+                </h2>
+                <p className="font-mono text-xs md:text-sm text-white/60 max-w-sm leading-relaxed">
+                  {products[activeIndex].desc}
+                  <br/><br/>
+                  Formulated with rare botanical extracts for the ultimate cleansing experience.
+                </p>
+              </motion.div>
             </AnimatePresence>
           </div>
-  
-          {/* 3D Canvas */}
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            <Canvas shadows camera={{ position: [0, 1, 12], fov: 40 }} style={{ pointerEvents: 'auto' }}>
-              
-              {/* Brightened Lighting Setup */}
-              <ambientLight intensity={1.5} color="#ffffff" />
-              <directionalLight 
-                position={[10, 20, 10]} 
-                intensity={3} 
-                color="#ffffff" 
-                castShadow 
-                shadow-mapSize-width={2048}
-                shadow-mapSize-height={2048}
-              />
-              <spotLight 
-                position={[-10, 5, -10]} 
-                angle={0.5} 
-                penumbra={1} 
-                intensity={5} 
-                color={products[activeIndex].color}
-              />
-              
-              {/* Environment map for beautiful glass reflections */}
-              <Environment preset="city" />
-              
-              
-              <Suspense fallback={null}>
-                <Carousel activeIndex={activeIndex} />
-              </Suspense>
-              
-              {/* Ground Shadows aligned to bottom of the pillars */}
-              <ContactShadows position={[0, -4.0, 0]} opacity={0.6} scale={25} blur={2.5} far={10} />
-            </Canvas>
-          </div>
-  
-          {/* UI Layer */}
-          <div className="absolute inset-0 z-20 pointer-events-none p-6 md:p-12 flex flex-col justify-between">
-            
-            {/* Top Bar */}
-            <div className="flex justify-between items-start w-full">
-              <div className="flex items-center gap-4">
-                <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center font-bold text-xl pointer-events-auto cursor-pointer">
-                  W
-                </div>
-                <div className="font-sans text-white text-lg font-bold tracking-widest pointer-events-auto cursor-pointer hidden md:block">
-                  WELL EMPIRE
-                </div>
-              </div>
-              
-              <div className="hidden md:flex items-center space-x-6 pointer-events-auto">
-                <span className="font-mono text-xs tracking-[0.2em] text-white/60 hover:text-white transition-colors cursor-pointer">STORE</span>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs tracking-[0.2em]">CART</span>
-                  <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors">
-                    <ShoppingCart size={14} />
-                  </div>
-                  <span className="font-mono text-sm font-medium">$45.00</span>
-                </div>
-              </div>
-              
-              <div className="md:hidden pointer-events-auto cursor-pointer">
-                <Menu size={24} className="text-white" />
-              </div>
-            </div>
-  
-            {/* Middle Right Nav (Vertical) */}
-            <div className="hidden md:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col space-y-12 pointer-events-auto">
-              {['STORE', 'CLEANSERS', 'NFTS'].map((item, idx) => (
-                <span 
-                  key={item} 
-                  className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer ${idx === 1 ? 'text-white' : 'text-white/40 hover:text-white/80'}`} 
-                  style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
-                >
-                  {item}
-                </span>
+
+          {/* Bottom Center Navigation Controls */}
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-6">
+            <button 
+              onClick={prevProduct}
+              className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <div className="flex gap-2">
+              {products.map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`h-1.5 rounded-full transition-all duration-500 ${activeIndex === i ? 'w-8 bg-white' : 'w-2 bg-white/20'}`}
+                />
               ))}
             </div>
-  
-            {/* Bottom Left Product Info */}
-            <div className="w-full md:w-1/2 pointer-events-auto absolute bottom-24 md:bottom-12 left-6 md:left-12 text-left">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeIndex}
-                  initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
-                  animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                  exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                >
-                  <div className="font-mono text-xs text-white/50 tracking-[0.2em] mb-4">
-                    {(activeIndex + 1).toString().padStart(3, '0')}
-                  </div>
-                  <h2 className="font-display text-6xl md:text-[100px] leading-[0.85] tracking-tight text-white mb-6 uppercase">
-                    {products[activeIndex].title.split(' ').map((word, i) => (
-                      <span key={i} className="block">{word}</span>
-                    ))}
-                  </h2>
-                  <p className="font-mono text-xs md:text-sm text-white/60 max-w-sm leading-relaxed">
-                    {products[activeIndex].desc}
-                    <br/><br/>
-                    Formulated with rare botanical extracts for the ultimate cleansing experience.
-                  </p>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-  
-            {/* Bottom Center Navigation Controls */}
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-6">
-              <button 
-                onClick={prevProduct}
-                className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <div className="flex gap-2">
-                {products.map((_, i) => (
-                  <div 
-                    key={i} 
-                    className={`h-1.5 rounded-full transition-all duration-500 ${activeIndex === i ? 'w-8 bg-white' : 'w-2 bg-white/20'}`}
-                  />
-                ))}
-              </div>
-              <button 
-                onClick={nextProduct}
-                className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-  
+            <button 
+              onClick={nextProduct}
+              className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
-  
-          {/* Subtle Decorative Crosshairs */}
-          <div className="absolute top-[20%] left-[30%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
-          <div className="absolute bottom-[30%] right-[25%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
-          
-        </motion.main>
-      </div>
-    );
+
+        </div>
+
+        {/* Subtle Decorative Crosshairs */}
+        <div className="absolute top-[20%] left-[30%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
+        <div className="absolute bottom-[30%] right-[25%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
+        
+      </motion.main>
+    </div>
+  );
 }
 
-
-
-export default Visuals3D
+export default Visuals3D;
 
 --- src/global.d.ts ---
 // src/global.d.ts
@@ -673,8 +900,8 @@ export const products =[
     desc: "Gentle foaming hand soap - 500ml", 
     color: "#dc2626", 
     bgColor: "#240A0A", 
-    image: "/bottle-aura.png",
-    depthImage: "/bottle-divine-depth.png"
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depth.png"
   },
   { 
     id: 2, 
@@ -682,8 +909,8 @@ export const products =[
     desc: "Overnight restorative wash - 250ml", 
     color: "#16a34a", 
     bgColor: "#0A2412", 
-    image: "/bottle-lunar.png",
-    depthImage: "/bottle-divine-depth.png"
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depth.png"
   },
   { 
     id: 3, 
@@ -691,8 +918,8 @@ export const products =[
     desc: "Exfoliating body polish - 400g", 
     color: "#9333ea", 
     bgColor: "#1A0A24", 
-    image: "/bottle-solar.png",
-    depthImage: "/bottle-divine-depth.png"
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depth.png"
   },
 ];
 
