@@ -20,7 +20,6 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Use premultipliedAlpha: false to correctly render PNG straight transparency
     const gl = canvas.getContext('webgl', { 
       alpha: true, 
       premultipliedAlpha: false,
@@ -32,7 +31,6 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     }
     glRef.current = gl;
 
-    // Enable WebGL alpha blending
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -42,12 +40,12 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       varying vec2 vUv;
       void main() {
         vUv = position * 0.5 + 0.5;
-        vUv.y = 1.0 - vUv.y; // Match standard texture coordinates
+        vUv.y = 1.0 - vUv.y;
         gl_Position = vec4(position, 0.0, 1.0);
       }
     `;
 
-    // Fragment Shader
+    // Fragment Shader with multi-tap depth smoothing to prevent text jaggedness
     const fsSource = `
       precision mediump float;
       varying vec2 vUv;
@@ -55,17 +53,32 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       uniform sampler2D uDepth;
       uniform vec2 uOffset;
       
+      // Smooths high-frequency label bumps by averaging local depth samples
+      float getSmoothedDepth(vec2 uv) {
+        float depthSum = 0.0;
+        const float blurStep = 0.005; // Smoothing radius
+        
+        depthSum += texture2D(uDepth, uv + vec2(-blurStep, -blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(0.0, -blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(blurStep, -blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(-blurStep, 0.0)).r;
+        depthSum += texture2D(uDepth, uv + vec2(0.0, 0.0)).r;
+        depthSum += texture2D(uDepth, uv + vec2(blurStep, 0.0)).r;
+        depthSum += texture2D(uDepth, uv + vec2(-blurStep, blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(0.0, blurStep)).r;
+        depthSum += texture2D(uDepth, uv + vec2(blurStep, blurStep)).r;
+        
+        return depthSum / 9.0;
+      }
+
       void main() {
-        // Sample depth map
-        float depth = texture2D(uDepth, vUv).r;
+        float depth = getSmoothedDepth(vUv);
         
-        // Calculate displacement offset
-        vec2 displacement = uOffset * (depth * 0.06);
+        // Gentle, high-fidelity displacement
+        vec2 displacement = uOffset * (depth * 0.04);
         
-        // Sample image color at displaced coordinates
         vec4 color = texture2D(uImage, vUv + displacement);
         
-        // Hard discard of transparent pixels to prevent rectangular bounding box artifact
         if (color.a < 0.05) {
           discard;
         }
@@ -166,10 +179,10 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     window.addEventListener('resize', resizeCanvas);
 
     const render = (time = 0) => {
-      // Automatic drift orbit cycle to simulate dynamic 3D rotational wobble
+      // Subtle float motion parameters
       const t = time * 0.0012; 
-      const targetX = Math.sin(t) * 0.28;
-      const targetY = Math.cos(t * 1.4) * 0.12;
+      const targetX = Math.sin(t) * 0.15;
+      const targetY = Math.cos(t * 1.3) * 0.06;
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);

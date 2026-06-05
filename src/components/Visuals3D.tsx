@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Menu, ShoppingCart } from 'lucide-react';
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
+  const image = '/imge'
   
   const nextProduct = () => {
     if (isScrolling.current) return;
@@ -62,9 +63,9 @@ const Visuals3D = () => {
           </AnimatePresence>
         </div>
 
-        {/* Depth Map Parallax Area */}
+        {/* Responsive Parallax Area */}
         <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden pointer-events-none">
-          <div className="relative w-full h-[65vh] max-w-5xl flex items-center justify-center">
+          <div className="relative w-full h-[75vh] max-w-5xl flex items-center justify-center">
             {products.map((product, i) => {
               const isActive = i === activeIndex;
 
@@ -73,18 +74,16 @@ const Visuals3D = () => {
                   key={product.id}
                   style={{
                     position: 'absolute',
-                    width: '320px',
-                    height: '520px',
                   }}
                   animate={{
                     y: isActive ? -10 : 40,
-                    scale: isActive ? 1.2 : 0.75,
-                    // Completely hide non-active bottles in the background
+                    scale: isActive ? 1.35 : 0.75, // Scaled up active bottle for dynamic prominence
                     opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
                   }}
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                  className="flex items-center justify-center pointer-events-auto"
+                  // Dynamically scales container dimensions on different devices
+                  className="w-[85vw] md:w-[45vw] h-[60vh] md:h-[80vh] max-w-[450px] max-h-[750px] flex items-center justify-center pointer-events-auto"
                 >
                   <DepthMapViewer
                     image={product.image}
