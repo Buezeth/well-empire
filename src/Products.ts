@@ -30,11 +30,11 @@ export const products =[
   },
   { 
     id: 3, 
-    title: "SOLAR SCRUB", 
-    desc: "Exfoliating body polish - 400g", 
-    color: "#9333ea", 
-    bgColor: "#1A0A24", 
-    image: "/Divin Cleanser.png",
-    depthImage: "/Divin Cleanser Depth.png"
+    title: "ENJOY", 
+    desc: " Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine - 400g", 
+    color: "#16a34a", 
+    bgColor: "#f7f8ff", 
+    image: "/Enjoy.png",
+    depthImage: "/Enjoy Depth.png"
   },
 ];
