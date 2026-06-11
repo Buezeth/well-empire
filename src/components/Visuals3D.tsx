@@ -12,6 +12,78 @@ import { ChevronLeft, ChevronRight, Menu, ShoppingCart } from 'lucide-react';
 // ==========================================
 const SHOW_BACKGROUND_TEXT = true;
 
+// Continuous, beveled pattern border framing the container perfectly
+const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const strokeWidth = 16;
+  const halfStroke = strokeWidth / 2;
+  // Outer radius of 32px matches the container's md:rounded-4xl (32px) perfectly
+  const radius = isMobile ? 0 : 24; 
+
+  return (
+    <div 
+      className={`absolute inset-0 pointer-events-none z-10 transition-colors duration-500 ${
+        isLight 
+          ? 'text-neutral-950/[0.04]' 
+          : 'text-white/[0.05]'
+      }`}
+    >
+      <svg className="w-full h-full overflow-hidden">
+        <defs>
+          {/* Symmetrical repeating geometric tribal pattern tile */}
+          <pattern id="african-tribal-border" width="40" height="40" patternUnits="userSpaceOnUse" viewBox="0 0 40 40">
+            {/* Soft geometric diagonal guidelines */}
+            <path d="M0 0 L40 40 M40 0 L0 40" stroke="currentColor" strokeWidth="0.5" opacity="0.15" fill="none" />
+            
+            {/* Dual nested diamond rings */}
+            <polygon points="20,4 36,20 20,36 4,20" stroke="currentColor" strokeWidth="1.2" fill="none" />
+            <polygon points="20,10 30,20 20,30 10,20" stroke="currentColor" strokeWidth="0.8" fill="none" />
+            
+            {/* Center core dot */}
+            <circle cx="20" cy="20" r="2" fill="currentColor" />
+
+            {/* Corner geometric triangles */}
+            <polygon points="0,0 8,0 0,8" fill="currentColor" opacity="0.4" />
+            <polygon points="40,0 32,0 40,8" fill="currentColor" opacity="0.4" />
+            <polygon points="0,40 8,40 0,32" fill="currentColor" opacity="0.4" />
+            <polygon points="40,40 32,40 40,32" fill="currentColor" opacity="0.4" />
+
+            {/* Framing dots */}
+            <circle cx="20" cy="1" r="1.5" fill="currentColor" />
+            <circle cx="20" cy="39" r="1.5" fill="currentColor" />
+            <circle cx="1" cy="20" r="1.5" fill="currentColor" />
+            <circle cx="39" cy="20" r="1.5" fill="currentColor" />
+          </pattern>
+        </defs>
+        
+        {/* Rounded rectangle frame following the bevel exactly with zero sharp cuts */}
+        <rect 
+          style={{
+            x: `${halfStroke}px`,
+            y: `${halfStroke}px`,
+            width: `calc(100% - ${strokeWidth}px)`,
+            height: `calc(100% - ${strokeWidth}px)`
+          }}
+          rx={radius} 
+          ry={radius} 
+          fill="none" 
+          stroke="url(#african-tribal-border)" 
+          strokeWidth={strokeWidth} 
+          className="transition-all duration-500"
+        />
+      </svg>
+    </div>
+  );
+};
+
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
@@ -53,6 +125,9 @@ const Visuals3D = () => {
         className="relative w-full h-full md:rounded-4xl overflow-hidden shadow-2xl"
       >
         
+        {/* Subtle African Beveled Border Frame */}
+        <SubtleAfricanBorders isLight={isLight} />
+
         {/* Soft Center Glow */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.65)_100%)] pointer-events-none z-10"></div>
 
