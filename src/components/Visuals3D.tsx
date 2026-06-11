@@ -5,11 +5,20 @@ import { AnimatePresence, motion } from 'framer-motion';
 import DepthMapViewer from './DepthMapViewer';
 import { ChevronLeft, ChevronRight, Menu, ShoppingCart } from 'lucide-react';
 
+// ==========================================
+// TOGGLE THIS TO COMPARE BOTH STYLES LIVE:
+// true = Bold Editorial (Giant background text behind the product)
+// false = Ultra-Minimalist (No background text)
+// ==========================================
+const SHOW_BACKGROUND_TEXT = true;
+
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
-  const image = '/imge'
   
+  const currentProduct = products[activeIndex];
+  const isLight = currentProduct.isLight ?? false;
+
   const nextProduct = () => {
     if (isScrolling.current) return;
     isScrolling.current = true;
@@ -39,7 +48,7 @@ const Visuals3D = () => {
       {/* Dynamic Background Container */}
       <motion.main 
         initial={{ backgroundColor: products[0].bgColor }}
-        animate={{ backgroundColor: products[activeIndex].bgColor }}
+        animate={{ backgroundColor: currentProduct.bgColor }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
         className="relative w-full h-full md:rounded-4xl overflow-hidden shadow-2xl"
       >
@@ -48,20 +57,26 @@ const Visuals3D = () => {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.65)_100%)] pointer-events-none z-10"></div>
 
         {/* Giant Background Typography */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden mix-blend-overlay opacity-30">
-          <AnimatePresence mode="wait">
-            <motion.h1 
-              key={activeIndex}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.1 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
-              className="text-[30vw] font-display text-white whitespace-nowrap select-none leading-none tracking-tighter"
-            >
-              {products[activeIndex].title.split(' ')[0]}
-            </motion.h1>
-          </AnimatePresence>
-        </div>
+        {SHOW_BACKGROUND_TEXT && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.h1 
+                key={activeIndex}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.1 }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
+                className={`text-[30vw] font-display whitespace-nowrap select-none leading-none tracking-tighter transition-colors duration-500 ${
+                  isLight 
+                    ? 'text-neutral-950/[0.05]' 
+                    : 'text-white/15 mix-blend-overlay'
+                }`}
+              >
+                {currentProduct.title.split(' ')[0]}
+              </motion.h1>
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* Responsive Parallax Area */}
         <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden pointer-events-none">
@@ -77,12 +92,11 @@ const Visuals3D = () => {
                   }}
                   animate={{
                     y: isActive ? -10 : 40,
-                    scale: isActive ? 1.35 : 0.75, // Scaled up active bottle for dynamic prominence
+                    scale: isActive ? 1.35 : 0.75, 
                     opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
                   }}
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                  // Dynamically scales container dimensions on different devices
                   className="w-[85vw] md:w-[45vw] h-[60vh] md:h-[80vh] max-w-[450px] max-h-[750px] flex items-center justify-center pointer-events-auto"
                 >
                   <DepthMapViewer
@@ -103,37 +117,51 @@ const Visuals3D = () => {
           {/* Top Bar */}
           <div className="flex justify-between items-start w-full">
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center font-bold text-xl pointer-events-auto cursor-pointer">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xl pointer-events-auto cursor-pointer transition-colors duration-500 ${
+                isLight ? 'bg-neutral-900 text-white' : 'bg-white text-black'
+              }`}>
                 W
               </div>
-              <div className="font-sans text-white text-lg font-bold tracking-widest pointer-events-auto cursor-pointer hidden md:block">
+              <div className={`font-sans text-lg font-bold tracking-widest pointer-events-auto cursor-pointer hidden md:block transition-colors duration-500 ${
+                isLight ? 'text-neutral-900' : 'text-white'
+              }`}>
                 WELL EMPIRE
               </div>
             </div>
             
-            <div className="hidden md:flex items-center space-x-6 pointer-events-auto">
-              <span className="font-mono text-xs tracking-[0.2em] text-white/60 hover:text-white transition-colors cursor-pointer">STORE</span>
+            <div className={`hidden md:flex items-center space-x-6 pointer-events-auto transition-colors duration-500 ${
+              isLight ? 'text-neutral-900' : 'text-white'
+            }`}>
+              <span className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer ${
+                isLight ? 'text-neutral-900/60 hover:text-neutral-900' : 'text-white/60 hover:text-white'
+              }`}>STORE</span>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-xs tracking-[0.2em]">CART</span>
-                <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors">
-                  <ShoppingCart size={14} />
+                <span className={`font-mono text-xs tracking-[0.2em] ${isLight ? 'text-neutral-900/60' : 'text-white/60'}`}>CART</span>
+                <div className={`w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer transition-colors ${
+                  isLight ? 'border-neutral-900/20 hover:bg-neutral-900/5' : 'border-white/20 hover:bg-white/10'
+                }`}>
+                  <ShoppingCart size={14} className={isLight ? 'text-neutral-900' : 'text-white'} />
                 </div>
                 <span className="font-mono text-sm font-medium">$45.00</span>
               </div>
             </div>
             
             <div className="md:hidden pointer-events-auto cursor-pointer">
-              <Menu size={24} className="text-white" />
+              <Menu size={24} className={isLight ? 'text-neutral-900' : 'text-white'} />
             </div>
           </div>
 
-          {/* Middle Right Nav (Vertical) */}
-          <div className="hidden md:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col space-y-12 pointer-events-auto">
+          {/* Middle Right Nav (Vertical Layout Fixed) */}
+          <div className="hidden md:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col space-y-10 pointer-events-auto items-center">
             {['STORE', 'CLEANSERS', 'NFTS'].map((item, idx) => (
               <span 
                 key={item} 
-                className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer ${idx === 1 ? 'text-white' : 'text-white/40 hover:text-white/80'}`} 
-                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer block ${
+                  idx === 1 
+                    ? (isLight ? 'text-neutral-900 font-bold' : 'text-white font-bold') 
+                    : (isLight ? 'text-neutral-900/40 hover:text-neutral-900/80' : 'text-white/40 hover:text-white/80')
+                }`} 
+                style={{ writingMode: 'vertical-rl' }}
               >
                 {item}
               </span>
@@ -150,16 +178,22 @@ const Visuals3D = () => {
                 exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
               >
-                <div className="font-mono text-xs text-white/50 tracking-[0.2em] mb-4">
+                <div className={`font-mono text-xs tracking-[0.2em] mb-4 transition-colors duration-500 ${
+                  isLight ? 'text-neutral-900/40' : 'text-white/50'
+                }`}>
                   {(activeIndex + 1).toString().padStart(3, '0')}
                 </div>
-                <h2 className="font-display text-6xl md:text-[100px] leading-[0.85] tracking-tight text-white mb-6 uppercase">
-                  {products[activeIndex].title.split(' ').map((word, i) => (
+                <h2 className={`font-display text-6xl md:text-[100px] leading-[0.85] tracking-tight mb-6 uppercase transition-colors duration-500 ${
+                  isLight ? 'text-neutral-900' : 'text-white'
+                }`}>
+                  {currentProduct.title.split(' ').map((word, i) => (
                     <span key={i} className="block">{word}</span>
                   ))}
                 </h2>
-                <p className="font-mono text-xs md:text-sm text-white/60 max-w-sm leading-relaxed">
-                  {products[activeIndex].desc}
+                <p className={`font-mono text-xs md:text-sm max-w-sm leading-relaxed transition-colors duration-500 ${
+                  isLight ? 'text-neutral-800/75' : 'text-white/60'
+                }`}>
+                  {currentProduct.desc}
                   <br/><br/>
                   Formulated with rare botanical extracts for the ultimate cleansing experience.
                 </p>
@@ -171,7 +205,11 @@ const Visuals3D = () => {
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-6">
             <button 
               onClick={prevProduct}
-              className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                isLight 
+                  ? 'border-neutral-900/20 text-neutral-900/60 hover:text-neutral-900 hover:bg-neutral-900/5' 
+                  : 'border-white/20 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
             >
               <ChevronLeft size={18} />
             </button>
@@ -179,13 +217,21 @@ const Visuals3D = () => {
               {products.map((_, i) => (
                 <div 
                   key={i} 
-                  className={`h-1.5 rounded-full transition-all duration-500 ${activeIndex === i ? 'w-8 bg-white' : 'w-2 bg-white/20'}`}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                    activeIndex === i 
+                      ? (isLight ? 'w-8 bg-neutral-900' : 'w-8 bg-white') 
+                      : (isLight ? 'w-2 bg-neutral-900/10' : 'w-2 bg-white/20')
+                  }`}
                 />
               ))}
             </div>
             <button 
               onClick={nextProduct}
-              className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                isLight 
+                  ? 'border-neutral-900/20 text-neutral-900/60 hover:text-neutral-900 hover:bg-neutral-900/5' 
+                  : 'border-white/20 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
             >
               <ChevronRight size={18} />
             </button>
@@ -194,8 +240,12 @@ const Visuals3D = () => {
         </div>
 
         {/* Subtle Decorative Crosshairs */}
-        <div className="absolute top-[20%] left-[30%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
-        <div className="absolute bottom-[30%] right-[25%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
+        <div className={`absolute top-[20%] left-[30%] text-xs font-mono pointer-events-none hidden md:block transition-colors duration-500 ${
+          isLight ? 'text-neutral-900/10' : 'text-white/10'
+        }`}>+</div>
+        <div className={`absolute bottom-[30%] right-[25%] text-xs font-mono pointer-events-none hidden md:block transition-colors duration-500 ${
+          isLight ? 'text-neutral-900/10' : 'text-white/10'
+        }`}>+</div>
         
       </motion.main>
     </div>

@@ -119,6 +119,24 @@ coverage/
 --- public/Divin-Cleanser_depth.png ---
 [Binary file detected - content excluded]
 
+--- public/Enjoy Depth.png ---
+[Binary file detected - content excluded]
+
+--- public/Enjoy.png ---
+[Binary file detected - content excluded]
+
+--- public/Gentle Bliss Depth.png ---
+[Binary file detected - content excluded]
+
+--- public/Gentle Bliss.png ---
+[Binary file detected - content excluded]
+
+--- public/PUSBA Depth.png ---
+[Binary file detected - content excluded]
+
+--- public/PUSBA.png ---
+[Binary file detected - content excluded]
+
 --- README.md ---
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
@@ -257,6 +275,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Use default premultipliedAlpha: true to match browser composite expectation
     const gl = canvas.getContext('webgl', { 
       alpha: true, 
       premultipliedAlpha: false,
@@ -268,8 +287,9 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     }
     glRef.current = gl;
 
+    // Enable alpha blending and use the correct premultiplied blending function
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     // Vertex Shader
     const vsSource = `
@@ -282,7 +302,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       }
     `;
 
-    // Fragment Shader: Broadened multi-tap depth blur to remove local text distortion
+    // Fragment Shader: Smooths boundaries and outputs premultiplied alpha
     const fsSource = `
       precision mediump float;
       varying vec2 vUv;
@@ -290,10 +310,9 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       uniform sampler2D uDepth;
       uniform vec2 uOffset;
       
-      // Smooths high-frequency local detail by averaging depth maps over a wide area
       float getSmoothedDepth(vec2 uv) {
         float depthSum = 0.0;
-        const float blurStep = 0.022; // Broadened sampling step for a smoother cylinder shape
+        const float blurStep = 0.022;
         
         depthSum += texture2D(uDepth, uv + vec2(-blurStep, -blurStep)).r;
         depthSum += texture2D(uDepth, uv + vec2(0.0, -blurStep)).r;
@@ -309,18 +328,22 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       }
 
       void main() {
+        // Sample original image to establish layout boundary
+        vec4 originalColor = texture2D(uImage, vUv);
+        
         float depth = getSmoothedDepth(vUv);
         
-        // Balanced, subtle displacement factor to stabilize text
-        vec2 displacement = uOffset * (depth * 0.035);
+        // Scale down coordinate shifting at the transparent margins
+        float edgeDamp = originalColor.a * originalColor.a;
+        vec2 displacement = uOffset * (depth * 0.035) * edgeDamp;
         
         vec4 color = texture2D(uImage, vUv + displacement);
         
-        if (color.a < 0.05) {
-          discard;
-        }
+        // Clean anti-aliased alpha boundary
+        color.a = min(color.a, originalColor.a);
         
-        gl_FragColor = color;
+        // Output premultiplied alpha (RGB multiplied by alpha) to match the WebGL compositor settings
+        gl_FragColor = vec4(color.rgb * color.a, color.a);
       }
     `;
 
@@ -406,14 +429,18 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       render();
     });
 
-    const resizeCanvas = () => {
+    // ResizeObserver tracks actual visual bounds on layout or ratio changes
+    const resizeObserver = new ResizeObserver(() => {
       const dpr = window.devicePixelRatio || 1;
-      canvas.width = canvas.clientWidth * dpr;
-      canvas.height = canvas.clientHeight * dpr;
-      gl.viewport(0, 0, canvas.width, canvas.height);
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+      const width = canvas.clientWidth;
+      const height = canvas.clientHeight;
+      if (width > 0 && height > 0) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+    });
+    resizeObserver.observe(canvas);
 
     const render = (time = 0) => {
       const t = time * 0.0012; 
@@ -443,7 +470,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     render();
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      resizeObserver.disconnect();
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       gl.deleteBuffer(buffer);
       gl.deleteTexture(imageTex);
@@ -454,7 +481,6 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
 
   return (
     <div 
-      // Changed from w-full h-full to flex-based scaling that respects the aspect ratio rule
       className="h-full max-h-full max-w-full flex items-center justify-center pointer-events-none"
       style={{ aspectRatio: `${aspectRatio}` }}
     >
@@ -896,30 +922,30 @@ export const products =[
   },
   { 
     id: 1, 
-    title: "AURA WASH", 
+    title: "GENTLE BLISS", 
     desc: "Gentle foaming hand soap - 500ml", 
     color: "#dc2626", 
-    bgColor: "#240A0A", 
-    image: "/Divin Cleanser.png",
-    depthImage: "/Divin Cleanser Depth.png"
+    bgColor: "#5a374f", 
+    image: "/Gentle Bliss.png",
+    depthImage: "/Gentle Bliss Depth.png"
   },
   { 
     id: 2, 
-    title: "LUNAR ELIXIR", 
-    desc: "Overnight restorative wash - 250ml", 
+    title: "PUSBA", 
+    desc: "Eau de Javel - 250ml", 
     color: "#16a34a", 
     bgColor: "#0A2412", 
-    image: "/Divin Cleanser.png",
-    depthImage: "/Divin Cleanser Depth.png"
+    image: "/PUSBA.png",
+    depthImage: "/PUSBA Depth.png"
   },
   { 
     id: 3, 
-    title: "SOLAR SCRUB", 
-    desc: "Exfoliating body polish - 400g", 
-    color: "#9333ea", 
-    bgColor: "#1A0A24", 
-    image: "/Divin Cleanser.png",
-    depthImage: "/Divin Cleanser Depth.png"
+    title: "ENJOY", 
+    desc: " Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine - 400g", 
+    color: "#16a34a", 
+    bgColor: "#f7f8ff", 
+    image: "/Enjoy.png",
+    depthImage: "/Enjoy Depth.png"
   },
 ];
 
