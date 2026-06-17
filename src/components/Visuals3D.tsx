@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { products } from '../Products';
 import { AnimatePresence, motion } from 'framer-motion';
 import DepthMapViewer from './DepthMapViewer';
+import BreezeEffect from './BreezeEffect'; // <-- 1. Import the Breeze effect
 import { ChevronLeft, ChevronRight, Menu, ShoppingCart } from 'lucide-react';
 
 // ==========================================
@@ -153,6 +154,11 @@ const Visuals3D = () => {
           </div>
         )}
 
+        {/* --- LAYER 1: BACK BREEZE (Rendered behind the physical bottle with depth blur) --- */}
+        <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
+          <BreezeEffect activeIndex={activeIndex} layer="back" />
+        </div>
+
         {/* Responsive Parallax Area */}
         <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden pointer-events-none">
           <div className="relative w-full h-[75vh] max-w-5xl flex items-center justify-center">
@@ -184,6 +190,11 @@ const Visuals3D = () => {
               );
             })}
           </div>
+        </div>
+
+        {/* --- LAYER 2: FRONT BREEZE (Rendered crisp on top of the bottle) --- */}
+        <div className="absolute inset-0 z-[15] pointer-events-none overflow-hidden">
+          <BreezeEffect activeIndex={activeIndex} layer="front" />
         </div>
 
         {/* UI Layer */}

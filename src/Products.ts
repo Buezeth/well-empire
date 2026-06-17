@@ -19,7 +19,7 @@ export const products: Product[] = [
     color: "#2563eb", 
     bgColor: "#0A1024", 
     image: "/Divin Cleanser.png",
-    depthImage: "/Divin Cleanser Depth.png",
+    depthImage: "/Divin Cleanser depthmap.png",
     isLight: false
   },
   { 
@@ -38,8 +38,8 @@ export const products: Product[] = [
     desc: "Eau de Javel - 250ml", 
     color: "#16a34a", 
     bgColor: "#0A2412", 
-    image: "/PUSBA.png",
-    depthImage: "/PUSBA Depth.png",
+    image: "/Pusba.png",
+    depthImage: "/Pusba depthmap.png",
     isLight: false
   },
   { 
@@ -49,7 +49,7 @@ export const products: Product[] = [
     color: "#16a34a", 
     bgColor: "#f7f8ff", 
     image: "/Enjoy.png",
-    depthImage: "/Enjoy Depth.png",
+    depthImage: "/Enjoy depthmap.png",
     isLight: true
   },
 ];

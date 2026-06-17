@@ -83,43 +83,13 @@ coverage/
 }
 
 
---- public/699ff161-6a2d-44d4-95ae-310e48d5f90e_step31.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-aura.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-divine-depth.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-divine-depth3.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-divine-depth4.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-divine.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-divine3.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-lunar.png ---
-[Binary file detected - content excluded]
-
---- public/bottle-solar.png ---
-[Binary file detected - content excluded]
-
---- public/Divin Cleanser Depth.png ---
+--- public/Divin Cleanser depthmap.png ---
 [Binary file detected - content excluded]
 
 --- public/Divin Cleanser.png ---
 [Binary file detected - content excluded]
 
---- public/Divin-Cleanser_depth.png ---
-[Binary file detected - content excluded]
-
---- public/Enjoy Depth.png ---
+--- public/Enjoy depthmap.png ---
 [Binary file detected - content excluded]
 
 --- public/Enjoy.png ---
@@ -131,10 +101,10 @@ coverage/
 --- public/Gentle Bliss.png ---
 [Binary file detected - content excluded]
 
---- public/PUSBA Depth.png ---
+--- public/Pusba depthmap.png ---
 [Binary file detected - content excluded]
 
---- public/PUSBA.png ---
+--- public/Pusba.png ---
 [Binary file detected - content excluded]
 
 --- README.md ---
@@ -170,6 +140,270 @@ export default function App() {
     </>
   )
 }
+
+--- src/components/BreezeEffect.tsx ---
+// src/components/BreezeEffect.tsx
+import React, { useEffect, useState, useRef } from 'react';
+import { motion } from 'framer-motion';
+
+interface Particle {
+  id: string;
+  type: 'leaf' | 'petal' | 'bubble' | 'streak';
+  color: string;
+  size: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+  duration: number;
+  rotateStart: number;
+  rotateEnd: number;
+  opacity: number;
+  layer: 'front' | 'back';
+}
+
+// Lightweight vector icons for crisp performance and scalability
+const LeafIcon = ({ color }: { color: string }) => (
+  <svg viewBox="0 0 30 20" className="w-full h-full drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]" fill="none">
+    <path
+      d="M 2,10 C 10,2 22,2 28,10 C 22,18 10,18 2,10 Z"
+      fill={color}
+    />
+    <path
+      d="M 2,10 Q 15,10 28,10"
+      stroke="rgba(255,255,255,0.3)"
+      strokeWidth="1"
+      strokeDasharray="2 1"
+    />
+  </svg>
+);
+
+const PetalIcon = ({ color }: { color: string }) => (
+  <svg viewBox="0 0 24 30" className="w-full h-full drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]" fill="none">
+    <path
+      d="M 12,2 C 19,8 21,18 12,28 C 3,18 5,8 12,2 Z"
+      fill={color}
+    />
+  </svg>
+);
+
+// Realistic soap bubble with thin translucent stroke and specular reflection highlights
+const BubbleIcon = ({ color }: { color: string }) => (
+  <svg viewBox="0 0 24 24" className="w-full h-full" fill="none">
+    {/* Translucent bubble membrane and soft inner tint */}
+    <circle 
+      cx="12" 
+      cy="12" 
+      r="10" 
+      stroke={color} 
+      strokeWidth="1.2" 
+      strokeOpacity="0.7" 
+      fill={color} 
+      fillOpacity="0.08" 
+    />
+    {/* Spherical top-left highlight */}
+    <ellipse 
+      cx="8.5" 
+      cy="8.5" 
+      rx="2.5" 
+      ry="1.5" 
+      transform="rotate(-30 8.5 8.5)" 
+      fill="#ffffff" 
+      fillOpacity="0.75" 
+    />
+    {/* Bottom-right secondary reflection */}
+    <circle 
+      cx="16" 
+      cy="16" 
+      r="1" 
+      fill="#ffffff" 
+      fillOpacity="0.4" 
+    />
+  </svg>
+);
+
+const StreakIcon = ({ color }: { color: string }) => (
+  <svg viewBox="0 0 120 10" className="w-full h-full" fill="none">
+    <path
+      d="M 0,5 Q 30,2 60,5 T 120,5"
+      stroke={color}
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      opacity="0.25"
+    />
+  </svg>
+);
+
+// Dynamic colors, sizes, and opacities matching each brand's palette
+const getParticleSpecs = (activeIndex: number) => {
+  switch (activeIndex) {
+    case 0: // DIVINE CLEANSER (Bubbles and wind streaks)
+      return {
+        types: ['bubble', 'streak'] as const,
+        colors: ['#60a5fa', '#3b82f6', '#93c5fd', '#ffffff', '#a5f3fc'],
+        opacityRange: [0.35, 0.8],
+        sizeRange: [14, 32], // Soft variation in bubble sizes
+      };
+    case 1: // GENTLE BLISS
+      return {
+        types: ['petal', 'streak'] as const,
+        colors: ['#f43f5e', '#ec4899', '#fda4af', '#fce7f3', '#ffffff'],
+        opacityRange: [0.4, 0.8],
+        sizeRange: [16, 26],
+      };
+    case 2: // PUSBA
+      return {
+        types: ['leaf', 'streak'] as const,
+        colors: ['#22c55e', '#4ade80', '#86efac', '#bbf7d0', '#ffffff'],
+        opacityRange: [0.35, 0.75],
+        sizeRange: [16, 30],
+      };
+    case 3: // ENJOY
+      return {
+        types: ['leaf', 'streak'] as const,
+        colors: ['#84cc16', '#a3e635', '#bef264', '#15803d', '#3f6212'],
+        opacityRange: [0.25, 0.6],
+        sizeRange: [14, 28],
+      };
+    default:
+      return {
+        types: ['streak'] as const,
+        colors: ['#ffffff'],
+        opacityRange: [0.2, 0.5],
+        sizeRange: [20, 40],
+      };
+  }
+};
+
+const createParticle = (activeIndex: number, layer: 'front' | 'back'): Particle => {
+  const specs = getParticleSpecs(activeIndex);
+  const type = specs.types[Math.floor(Math.random() * specs.types.length)];
+  const color = specs.colors[Math.floor(Math.random() * specs.colors.length)];
+  
+  const minSize = specs.sizeRange[0];
+  const maxSize = specs.sizeRange[1];
+  const size = type === 'streak' 
+    ? Math.floor(Math.random() * 40) + 90 
+    : Math.floor(Math.random() * (maxSize - minSize)) + minSize;
+  
+  const minOpacity = specs.opacityRange[0];
+  const maxOpacity = specs.opacityRange[1];
+  const opacity = Math.random() * (maxOpacity - minOpacity) + minOpacity;
+  
+  const startX = -15; // Offscreen left
+  const endX = 115;   // Offscreen right
+  const startY = Math.random() * 80 + 10; // Keep off the extremes
+  const endY = startY + (Math.random() * 30 - 15); // Gentle upward or downward drift
+  
+  const duration = Math.random() * 5 + 7; // Slow drifting speed (7-12 seconds)
+  const rotateStart = Math.random() * 360;
+  // Bubbles rotate more slowly to look light, while leaves/petals spin more dynamically
+  const rotationScale = type === 'bubble' ? 40 : 180;
+  const rotateEnd = rotateStart + (Math.random() * rotationScale - (rotationScale / 2));
+
+  return {
+    id: Math.random().toString(36).substring(2, 9),
+    type,
+    color,
+    size,
+    startX,
+    startY,
+    endX,
+    endY,
+    duration,
+    rotateStart,
+    rotateEnd,
+    opacity,
+    layer,
+  };
+};
+
+const BreezeEffect = ({ activeIndex, layer }: { activeIndex: number; layer: 'front' | 'back' }) => {
+  const [particles, setParticles] = useState<Particle[]>([]);
+  const indexRef = useRef(activeIndex);
+
+  useEffect(() => {
+    indexRef.current = activeIndex;
+  }, [activeIndex]);
+
+  // Seeding initial particles so visual is flowing immediately on load
+  useEffect(() => {
+    const initialParticles: Particle[] = [];
+    const count = layer === 'back' ? 3 : 2;
+    for (let i = 0; i < count; i++) {
+      const p = createParticle(activeIndex, layer);
+      const progress = Math.random() * 0.7 + 0.1;
+      p.startX = p.startX + (p.endX - p.startX) * progress;
+      p.startY = p.startY + (p.endY - p.startY) * progress;
+      p.duration = p.duration * (1 - progress); 
+      initialParticles.push(p);
+    }
+    setParticles(initialParticles);
+  }, [activeIndex, layer]);
+
+  useEffect(() => {
+    const intervalTime = layer === 'back' ? 2200 : 3200; 
+    const maxParticles = layer === 'back' ? 6 : 4;
+
+    const interval = setInterval(() => {
+      setParticles(prev => {
+        if (prev.length >= maxParticles) return prev;
+        return [...prev, createParticle(indexRef.current, layer)];
+      });
+    }, intervalTime);
+
+    return () => clearInterval(interval);
+  }, [layer]);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none w-full h-full select-none">
+      {particles.map(particle => {
+        const IconComponent = 
+          particle.type === 'leaf' ? LeafIcon :
+          particle.type === 'petal' ? PetalIcon :
+          particle.type === 'bubble' ? BubbleIcon :
+          StreakIcon;
+
+        return (
+          <motion.div
+            key={particle.id}
+            initial={{
+              x: `${particle.startX}vw`,
+              y: `${particle.startY}vh`,
+              rotate: particle.rotateStart,
+              scale: 0.1,
+              opacity: 0,
+            }}
+            animate={{
+              x: `${particle.endX}vw`,
+              y: `${particle.endY}vh`,
+              rotate: particle.rotateEnd,
+              scale: [0.1, 0.9, 1, 0.8, 0.1],
+              opacity: [0, particle.opacity, particle.opacity, particle.opacity * 0.4, 0],
+            }}
+            transition={{
+              duration: particle.duration,
+              ease: "linear",
+            }}
+            onAnimationComplete={() => {
+              setParticles(prev => prev.filter(p => p.id !== particle.id));
+            }}
+            className="absolute"
+            style={{
+              width: particle.size,
+              height: particle.type === 'streak' ? particle.size / 6 : particle.size,
+              filter: particle.layer === 'back' ? 'blur(1.5px)' : 'none', // Depth-of-field blur on background elements
+            }}
+          >
+            <IconComponent color={particle.color} />
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+export default BreezeEffect;
 
 --- src/components/Carousel.tsx ---
 // src/components/Carousel.tsx
@@ -662,13 +896,95 @@ import React, { useEffect, useRef, useState } from 'react';
 import { products } from '../Products';
 import { AnimatePresence, motion } from 'framer-motion';
 import DepthMapViewer from './DepthMapViewer';
+import BreezeEffect from './BreezeEffect'; // <-- 1. Import the Breeze effect
 import { ChevronLeft, ChevronRight, Menu, ShoppingCart } from 'lucide-react';
+
+// ==========================================
+// TOGGLE THIS TO COMPARE BOTH STYLES LIVE:
+// true = Bold Editorial (Giant background text behind the product)
+// false = Ultra-Minimalist (No background text)
+// ==========================================
+const SHOW_BACKGROUND_TEXT = true;
+
+// Continuous, beveled pattern border framing the container perfectly
+const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const strokeWidth = 16;
+  const halfStroke = strokeWidth / 2;
+  // Outer radius of 32px matches the container's md:rounded-4xl (32px) perfectly
+  const radius = isMobile ? 0 : 24; 
+
+  return (
+    <div 
+      className={`absolute inset-0 pointer-events-none z-10 transition-colors duration-500 ${
+        isLight 
+          ? 'text-neutral-950/[0.04]' 
+          : 'text-white/[0.05]'
+      }`}
+    >
+      <svg className="w-full h-full overflow-hidden">
+        <defs>
+          {/* Symmetrical repeating geometric tribal pattern tile */}
+          <pattern id="african-tribal-border" width="40" height="40" patternUnits="userSpaceOnUse" viewBox="0 0 40 40">
+            {/* Soft geometric diagonal guidelines */}
+            <path d="M0 0 L40 40 M40 0 L0 40" stroke="currentColor" strokeWidth="0.5" opacity="0.15" fill="none" />
+            
+            {/* Dual nested diamond rings */}
+            <polygon points="20,4 36,20 20,36 4,20" stroke="currentColor" strokeWidth="1.2" fill="none" />
+            <polygon points="20,10 30,20 20,30 10,20" stroke="currentColor" strokeWidth="0.8" fill="none" />
+            
+            {/* Center core dot */}
+            <circle cx="20" cy="20" r="2" fill="currentColor" />
+
+            {/* Corner geometric triangles */}
+            <polygon points="0,0 8,0 0,8" fill="currentColor" opacity="0.4" />
+            <polygon points="40,0 32,0 40,8" fill="currentColor" opacity="0.4" />
+            <polygon points="0,40 8,40 0,32" fill="currentColor" opacity="0.4" />
+            <polygon points="40,40 32,40 40,32" fill="currentColor" opacity="0.4" />
+
+            {/* Framing dots */}
+            <circle cx="20" cy="1" r="1.5" fill="currentColor" />
+            <circle cx="20" cy="39" r="1.5" fill="currentColor" />
+            <circle cx="1" cy="20" r="1.5" fill="currentColor" />
+            <circle cx="39" cy="20" r="1.5" fill="currentColor" />
+          </pattern>
+        </defs>
+        
+        {/* Rounded rectangle frame following the bevel exactly with zero sharp cuts */}
+        <rect 
+          style={{
+            x: `${halfStroke}px`,
+            y: `${halfStroke}px`,
+            width: `calc(100% - ${strokeWidth}px)`,
+            height: `calc(100% - ${strokeWidth}px)`
+          }}
+          rx={radius} 
+          ry={radius} 
+          fill="none" 
+          stroke="url(#african-tribal-border)" 
+          strokeWidth={strokeWidth} 
+          className="transition-all duration-500"
+        />
+      </svg>
+    </div>
+  );
+};
 
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
-  const image = '/imge'
   
+  const currentProduct = products[activeIndex];
+  const isLight = currentProduct.isLight ?? false;
+
   const nextProduct = () => {
     if (isScrolling.current) return;
     isScrolling.current = true;
@@ -698,28 +1014,42 @@ const Visuals3D = () => {
       {/* Dynamic Background Container */}
       <motion.main 
         initial={{ backgroundColor: products[0].bgColor }}
-        animate={{ backgroundColor: products[activeIndex].bgColor }}
+        animate={{ backgroundColor: currentProduct.bgColor }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
         className="relative w-full h-full md:rounded-4xl overflow-hidden shadow-2xl"
       >
         
+        {/* Subtle African Beveled Border Frame */}
+        <SubtleAfricanBorders isLight={isLight} />
+
         {/* Soft Center Glow */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.65)_100%)] pointer-events-none z-10"></div>
 
         {/* Giant Background Typography */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden mix-blend-overlay opacity-30">
-          <AnimatePresence mode="wait">
-            <motion.h1 
-              key={activeIndex}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.1 }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
-              className="text-[30vw] font-display text-white whitespace-nowrap select-none leading-none tracking-tighter"
-            >
-              {products[activeIndex].title.split(' ')[0]}
-            </motion.h1>
-          </AnimatePresence>
+        {SHOW_BACKGROUND_TEXT && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+            <AnimatePresence mode="wait">
+              <motion.h1 
+                key={activeIndex}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.1 }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
+                className={`text-[30vw] font-display whitespace-nowrap select-none leading-none tracking-tighter transition-colors duration-500 ${
+                  isLight 
+                    ? 'text-neutral-950/[0.05]' 
+                    : 'text-white/15 mix-blend-overlay'
+                }`}
+              >
+                {currentProduct.title.split(' ')[0]}
+              </motion.h1>
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* --- LAYER 1: BACK BREEZE (Rendered behind the physical bottle with depth blur) --- */}
+        <div className="absolute inset-0 z-[5] pointer-events-none overflow-hidden">
+          <BreezeEffect activeIndex={activeIndex} layer="back" />
         </div>
 
         {/* Responsive Parallax Area */}
@@ -736,12 +1066,11 @@ const Visuals3D = () => {
                   }}
                   animate={{
                     y: isActive ? -10 : 40,
-                    scale: isActive ? 1.35 : 0.75, // Scaled up active bottle for dynamic prominence
+                    scale: isActive ? 1.35 : 0.75, 
                     opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
                   }}
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                  // Dynamically scales container dimensions on different devices
                   className="w-[85vw] md:w-[45vw] h-[60vh] md:h-[80vh] max-w-[450px] max-h-[750px] flex items-center justify-center pointer-events-auto"
                 >
                   <DepthMapViewer
@@ -756,43 +1085,62 @@ const Visuals3D = () => {
           </div>
         </div>
 
+        {/* --- LAYER 2: FRONT BREEZE (Rendered crisp on top of the bottle) --- */}
+        <div className="absolute inset-0 z-[15] pointer-events-none overflow-hidden">
+          <BreezeEffect activeIndex={activeIndex} layer="front" />
+        </div>
+
         {/* UI Layer */}
         <div className="absolute inset-0 z-20 pointer-events-none p-6 md:p-12 flex flex-col justify-between">
           
           {/* Top Bar */}
           <div className="flex justify-between items-start w-full">
             <div className="flex items-center gap-4">
-              <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center font-bold text-xl pointer-events-auto cursor-pointer">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xl pointer-events-auto cursor-pointer transition-colors duration-500 ${
+                isLight ? 'bg-neutral-900 text-white' : 'bg-white text-black'
+              }`}>
                 W
               </div>
-              <div className="font-sans text-white text-lg font-bold tracking-widest pointer-events-auto cursor-pointer hidden md:block">
+              <div className={`font-sans text-lg font-bold tracking-widest pointer-events-auto cursor-pointer hidden md:block transition-colors duration-500 ${
+                isLight ? 'text-neutral-900' : 'text-white'
+              }`}>
                 WELL EMPIRE
               </div>
             </div>
             
-            <div className="hidden md:flex items-center space-x-6 pointer-events-auto">
-              <span className="font-mono text-xs tracking-[0.2em] text-white/60 hover:text-white transition-colors cursor-pointer">STORE</span>
+            <div className={`hidden md:flex items-center space-x-6 pointer-events-auto transition-colors duration-500 ${
+              isLight ? 'text-neutral-900' : 'text-white'
+            }`}>
+              <span className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer ${
+                isLight ? 'text-neutral-900/60 hover:text-neutral-900' : 'text-white/60 hover:text-white'
+              }`}>STORE</span>
               <div className="flex items-center gap-3">
-                <span className="font-mono text-xs tracking-[0.2em]">CART</span>
-                <div className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center cursor-pointer hover:bg-white/10 transition-colors">
-                  <ShoppingCart size={14} />
+                <span className={`font-mono text-xs tracking-[0.2em] ${isLight ? 'text-neutral-900/60' : 'text-white/60'}`}>CART</span>
+                <div className={`w-8 h-8 rounded-full border flex items-center justify-center cursor-pointer transition-colors ${
+                  isLight ? 'border-neutral-900/20 hover:bg-neutral-900/5' : 'border-white/20 hover:bg-white/10'
+                }`}>
+                  <ShoppingCart size={14} className={isLight ? 'text-neutral-900' : 'text-white'} />
                 </div>
                 <span className="font-mono text-sm font-medium">$45.00</span>
               </div>
             </div>
             
             <div className="md:hidden pointer-events-auto cursor-pointer">
-              <Menu size={24} className="text-white" />
+              <Menu size={24} className={isLight ? 'text-neutral-900' : 'text-white'} />
             </div>
           </div>
 
-          {/* Middle Right Nav (Vertical) */}
-          <div className="hidden md:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col space-y-12 pointer-events-auto">
+          {/* Middle Right Nav (Vertical Layout Fixed) */}
+          <div className="hidden md:flex absolute right-12 top-1/2 -translate-y-1/2 flex-col space-y-10 pointer-events-auto items-center">
             {['STORE', 'CLEANSERS', 'NFTS'].map((item, idx) => (
               <span 
                 key={item} 
-                className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer ${idx === 1 ? 'text-white' : 'text-white/40 hover:text-white/80'}`} 
-                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+                className={`font-mono text-xs tracking-[0.2em] transition-colors cursor-pointer block ${
+                  idx === 1 
+                    ? (isLight ? 'text-neutral-900 font-bold' : 'text-white font-bold') 
+                    : (isLight ? 'text-neutral-900/40 hover:text-neutral-900/80' : 'text-white/40 hover:text-white/80')
+                }`} 
+                style={{ writingMode: 'vertical-rl' }}
               >
                 {item}
               </span>
@@ -809,16 +1157,22 @@ const Visuals3D = () => {
                 exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
               >
-                <div className="font-mono text-xs text-white/50 tracking-[0.2em] mb-4">
+                <div className={`font-mono text-xs tracking-[0.2em] mb-4 transition-colors duration-500 ${
+                  isLight ? 'text-neutral-900/40' : 'text-white/50'
+                }`}>
                   {(activeIndex + 1).toString().padStart(3, '0')}
                 </div>
-                <h2 className="font-display text-6xl md:text-[100px] leading-[0.85] tracking-tight text-white mb-6 uppercase">
-                  {products[activeIndex].title.split(' ').map((word, i) => (
+                <h2 className={`font-display text-6xl md:text-[100px] leading-[0.85] tracking-tight mb-6 uppercase transition-colors duration-500 ${
+                  isLight ? 'text-neutral-900' : 'text-white'
+                }`}>
+                  {currentProduct.title.split(' ').map((word, i) => (
                     <span key={i} className="block">{word}</span>
                   ))}
                 </h2>
-                <p className="font-mono text-xs md:text-sm text-white/60 max-w-sm leading-relaxed">
-                  {products[activeIndex].desc}
+                <p className={`font-mono text-xs md:text-sm max-w-sm leading-relaxed transition-colors duration-500 ${
+                  isLight ? 'text-neutral-800/75' : 'text-white/60'
+                }`}>
+                  {currentProduct.desc}
                   <br/><br/>
                   Formulated with rare botanical extracts for the ultimate cleansing experience.
                 </p>
@@ -830,7 +1184,11 @@ const Visuals3D = () => {
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-6">
             <button 
               onClick={prevProduct}
-              className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                isLight 
+                  ? 'border-neutral-900/20 text-neutral-900/60 hover:text-neutral-900 hover:bg-neutral-900/5' 
+                  : 'border-white/20 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
             >
               <ChevronLeft size={18} />
             </button>
@@ -838,13 +1196,21 @@ const Visuals3D = () => {
               {products.map((_, i) => (
                 <div 
                   key={i} 
-                  className={`h-1.5 rounded-full transition-all duration-500 ${activeIndex === i ? 'w-8 bg-white' : 'w-2 bg-white/20'}`}
+                  className={`h-1.5 rounded-full transition-all duration-500 ${
+                    activeIndex === i 
+                      ? (isLight ? 'w-8 bg-neutral-900' : 'w-8 bg-white') 
+                      : (isLight ? 'w-2 bg-neutral-900/10' : 'w-2 bg-white/20')
+                  }`}
                 />
               ))}
             </div>
             <button 
               onClick={nextProduct}
-              className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+              className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
+                isLight 
+                  ? 'border-neutral-900/20 text-neutral-900/60 hover:text-neutral-900 hover:bg-neutral-900/5' 
+                  : 'border-white/20 text-white/60 hover:text-white hover:bg-white/10'
+              }`}
             >
               <ChevronRight size={18} />
             </button>
@@ -853,8 +1219,12 @@ const Visuals3D = () => {
         </div>
 
         {/* Subtle Decorative Crosshairs */}
-        <div className="absolute top-[20%] left-[30%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
-        <div className="absolute bottom-[30%] right-[25%] text-white/10 text-xs font-mono pointer-events-none hidden md:block">+</div>
+        <div className={`absolute top-[20%] left-[30%] text-xs font-mono pointer-events-none hidden md:block transition-colors duration-500 ${
+          isLight ? 'text-neutral-900/10' : 'text-white/10'
+        }`}>+</div>
+        <div className={`absolute bottom-[30%] right-[25%] text-xs font-mono pointer-events-none hidden md:block transition-colors duration-500 ${
+          isLight ? 'text-neutral-900/10' : 'text-white/10'
+        }`}>+</div>
         
       </motion.main>
     </div>
@@ -910,15 +1280,27 @@ createRoot(document.getElementById('root')!).render(
 --- src/Products.ts ---
 // src/Products.ts
 
-export const products =[
+export interface Product {
+  id: number;
+  title: string;
+  desc: string;
+  color: string;
+  bgColor: string;
+  image: string;
+  depthImage: string;
+  isLight?: boolean;
+}
+
+export const products: Product[] = [
   { 
     id: 0, 
     title: "DIVINE CLEANSER", 
     desc: "For multi-purpose cleaning - 1L", 
     color: "#2563eb", 
     bgColor: "#0A1024", 
-    image: "/Divin Cleanser.png", // Just your image is needed!
-    depthImage: "/Divin Cleanser Depth.png"
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser depthmap.png",
+    isLight: false
   },
   { 
     id: 1, 
@@ -927,7 +1309,8 @@ export const products =[
     color: "#dc2626", 
     bgColor: "#5a374f", 
     image: "/Gentle Bliss.png",
-    depthImage: "/Gentle Bliss Depth.png"
+    depthImage: "/Gentle Bliss Depth.png",
+    isLight: false
   },
   { 
     id: 2, 
@@ -935,17 +1318,19 @@ export const products =[
     desc: "Eau de Javel - 250ml", 
     color: "#16a34a", 
     bgColor: "#0A2412", 
-    image: "/PUSBA.png",
-    depthImage: "/PUSBA Depth.png"
+    image: "/Pusba.png",
+    depthImage: "/Pusba depthmap.png",
+    isLight: false
   },
   { 
     id: 3, 
     title: "ENJOY", 
-    desc: " Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine - 400g", 
+    desc: "Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine - 400g", 
     color: "#16a34a", 
     bgColor: "#f7f8ff", 
     image: "/Enjoy.png",
-    depthImage: "/Enjoy Depth.png"
+    depthImage: "/Enjoy depthmap.png",
+    isLight: true
   },
 ];
 
