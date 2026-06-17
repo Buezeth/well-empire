@@ -234,7 +234,7 @@ const BreezeEffect = ({ activeIndex, layer }: { activeIndex: number; layer: 'fro
               x: `${particle.endX}vw`,
               y: `${particle.endY}vh`,
               rotate: particle.rotateEnd,
-              scale: [0.1, 0.9, 1, 0.8, 0.1],
+              scale: [0.1, 0.9, 1.5, 0.8, 0.1],
               opacity: [0, particle.opacity, particle.opacity, particle.opacity * 0.4, 0],
             }}
             transition={{
