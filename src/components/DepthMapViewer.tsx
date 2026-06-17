@@ -226,12 +226,12 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
 
   return (
     <div 
-      className="h-full max-h-full max-w-full flex items-center justify-center pointer-events-none"
+      className="absolute inset-0 m-auto max-w-full max-h-full pointer-events-none"
       style={{ aspectRatio: `${aspectRatio}` }}
     >
       <canvas 
         ref={canvasRef} 
-        className="w-full h-full object-contain pointer-events-none"
+        className="w-full h-full pointer-events-none block"
       />
     </div>
   );

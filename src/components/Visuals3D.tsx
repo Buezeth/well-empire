@@ -161,7 +161,8 @@ const Visuals3D = () => {
 
         {/* Responsive Parallax Area */}
         <div className="absolute inset-0 flex items-center justify-center z-10 overflow-hidden pointer-events-none">
-          <div className="relative w-full h-[75vh] max-w-5xl flex items-center justify-center">
+          {/* 1. Increased parent height from h-[75vh] to h-[85vh] */}
+          <div className="relative w-full h-[85vh] max-w-5xl flex items-center justify-center">
             {products.map((product, i) => {
               const isActive = i === activeIndex;
 
@@ -173,12 +174,17 @@ const Visuals3D = () => {
                   }}
                   animate={{
                     y: isActive ? -10 : 40,
-                    scale: isActive ? 1.35 : 0.75, 
+                    // 2. Increased active scale from 1.35 to 1.55
+                    scale: isActive ? 1.55 : 0.75, 
                     opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
                   }}
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                  className="w-[85vw] md:w-[45vw] h-[60vh] md:h-[80vh] max-w-[450px] max-h-[750px] flex items-center justify-center pointer-events-auto"
+                  // 3. Expanded layout bounds:
+                  //    - Width: w-[85vw] -> w-[90vw] | md:w-[45vw] -> md:w-[50vw]
+                  //    - Height: h-[60vh] -> h-[70vh] | md:h-[80vh] -> md:h-[90vh]
+                  //    - Max bounds: max-w-[450px] -> max-w-[550px] | max-h-[750px] -> max-h-[850px]
+                  className="w-[90vw] md:w-[50vw] h-[70vh] md:h-[90vh] max-w-[550px] max-h-[850px] flex items-center justify-center pointer-events-auto"
                 >
                   <DepthMapViewer
                     image={product.image}
