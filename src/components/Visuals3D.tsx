@@ -237,13 +237,14 @@ const Visuals3D = () => {
   const whatsappInquiryMessage = `Bonjour Well Empire, je souhaite avoir plus d'informations ou commander le produit "${currentProduct.title}" au prix de ${formattedProductPrice}. Pouvez-vous m'assister s'il vous plaît ?`;
   
   return (
-    <div className="w-screen h-screen bg-black md:p-4 flex items-center justify-center overflow-hidden font-sans">
+    // Uses dynamic viewport height (dvh) to adapt dynamically around Chrome / Safari URL address bars
+    <div className="w-screen min-h-[100dvh] md:h-screen bg-black md:p-4 flex items-center justify-center font-sans overflow-y-auto md:overflow-hidden">
       
       <motion.main 
         initial={{ backgroundColor: products[0].bgColor }}
         animate={{ backgroundColor: currentProduct.bgColor }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
-        className="relative w-full h-full md:rounded-4xl overflow-hidden shadow-2xl"
+        className="relative w-full min-h-[100dvh] md:h-full md:rounded-4xl overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -293,9 +294,8 @@ const Visuals3D = () => {
                     position: 'absolute',
                   }}
                   animate={{
-                    // On mobile, translate slightly up (-50) to clear the bottom layout elegantly
+                    // Centered beautifully on mobile backdrop while keeping desktop offset intact
                     y: isActive ? (isMobile ? -50 : -10) : 40,
-                    // Grander scale (1.3) on mobile to fully utilize the newly liberated space
                     scale: isActive ? (isMobile ? 1.3 : 1.55) : 0.75, 
                     opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
@@ -323,11 +323,11 @@ const Visuals3D = () => {
           <BreezeEffect activeIndex={activeIndex} layer="front" />
         </div>
 
-        {/* UI Layer */}
-        <div className="absolute inset-0 z-20 pointer-events-none p-6 md:p-12 flex flex-col justify-between">
+        {/* UI Layer (Converted to normal relative flow on mobile to trigger native mobile scrolling when menus are visible) */}
+        <div className="relative md:absolute md:inset-0 z-20 pointer-events-none p-6 md:p-12 flex flex-col justify-between min-h-[100dvh] md:min-h-0 w-full">
           
           {/* Top Bar */}
-          <div className="flex justify-between items-center w-full">
+          <div className="flex justify-between items-center w-full pointer-events-auto flex-none">
             <LuxuryLogo 
               activeIndex={activeIndex}
               currentProduct={currentProduct}
@@ -368,8 +368,8 @@ const Visuals3D = () => {
             </span>
           </div>
 
-          {/* Bottom Left Product Info - Lowered to bottom-8 on mobile to gain extra vertical breathing room */}
-          <div className="w-auto md:w-1/2 pointer-events-auto absolute bottom-8 md:bottom-12 left-6 right-6 md:right-auto md:left-12 text-left">
+          {/* Bottom Left Product Info - Uses responsive positioning so mobile naturally stacks and scrolls bottom-ward */}
+          <div className="w-full md:w-1/2 pointer-events-auto relative md:absolute bottom-0 md:bottom-12 left-0 right-0 md:right-auto md:left-12 text-left mt-auto pt-[40vh] md:pt-0 pb-6 md:pb-0">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeIndex}
