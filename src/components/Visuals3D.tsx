@@ -237,14 +237,15 @@ const Visuals3D = () => {
   const whatsappInquiryMessage = `Bonjour Well Empire, je souhaite avoir plus d'informations ou commander le produit "${currentProduct.title}" au prix de ${formattedProductPrice}. Pouvez-vous m'assister s'il vous plaît ?`;
   
   return (
-    // Uses dynamic viewport height (dvh) to adapt dynamically around Chrome / Safari URL address bars
-    <div className="w-screen min-h-[100dvh] md:h-screen bg-black md:p-4 flex items-center justify-center font-sans overflow-y-auto md:overflow-hidden">
+    // Uses dynamic viewport height (dvh) on mobile, but respects standard h-screen on desktop
+    <div className="w-screen min-h-[100dvh] md:min-h-0 md:h-screen bg-black md:p-4 flex items-center justify-center font-sans overflow-y-auto md:overflow-hidden">
       
       <motion.main 
         initial={{ backgroundColor: products[0].bgColor }}
         animate={{ backgroundColor: currentProduct.bgColor }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
-        className="relative w-full min-h-[100dvh] md:h-full md:rounded-4xl overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col"
+        // Added md:min-h-0 so the main container perfectly snaps into the padded console box on desktop without overflow
+        className="relative w-full min-h-[100dvh] md:min-h-0 md:h-full md:rounded-4xl overflow-y-auto md:overflow-hidden shadow-2xl flex flex-col"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -294,8 +295,9 @@ const Visuals3D = () => {
                     position: 'absolute',
                   }}
                   animate={{
-                    // Centered beautifully on mobile backdrop while keeping desktop offset intact
+                    // On mobile, translate slightly up (-50) to clear the bottom layout elegantly
                     y: isActive ? (isMobile ? -50 : -10) : 40,
+                    // Grander scale (1.3) on mobile to fully utilize the newly liberated space
                     scale: isActive ? (isMobile ? 1.3 : 1.55) : 0.75, 
                     opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
@@ -349,6 +351,21 @@ const Visuals3D = () => {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Mobile-Only Progress Tracker Dots (Positioned cleanly above the product, below top bar) */}
+          <div className="flex md:hidden justify-center items-center gap-2 w-full mt-4 pointer-events-auto flex-none z-30">
+            {products.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setActiveIndex(i)}
+                className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${
+                  activeIndex === i 
+                    ? (isLight ? 'w-3 bg-neutral-900' : 'w-3 bg-white') 
+                    : (isLight ? 'w-2 bg-neutral-900/25' : 'w-2 bg-white/30')
+                }`}
+              />
+            ))}
           </div>
 
           {/* Middle Right Nav */}
@@ -463,8 +480,8 @@ const Visuals3D = () => {
             </AnimatePresence>
           </div>
 
-          {/* Bottom Center Navigation Controls - Hidden on mobile */}
-          <div className="hidden md:flex absolute bottom-8 left-1/2 -translate-y-1/2 pointer-events-auto items-center gap-6">
+          {/* Bottom Center Navigation Controls - Strictly centered with translate-x-1/2 for desktop view */}
+          <div className="hidden md:flex absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto items-center gap-6 z-30">
             <button 
               onClick={prevProduct}
               className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer ${
