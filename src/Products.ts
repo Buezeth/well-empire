@@ -20,8 +20,8 @@ export const products: Product[] = [
     desc: "🧼 Produit multi-usage (ménage, lessive, vaisselle, véhicule, etc)", 
     color: "#2563eb", 
     bgColor: "#1fb6b7", 
-    image: "/Divin Cleanser 2_op.png",
-    depthImage: "/Divin Cleanser 2 depthmap.png",
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depthmap.png",
     isLight: false,
     price: 1500,
     isActive: true
@@ -32,8 +32,8 @@ export const products: Product[] = [
     desc: "🌸 Le linge qui sent bon, même après une longue journée ? Gentle Bliss fait le travail.", 
     color: "#dc2626", 
     bgColor: "#15c6e1", 
-    image: "/Gentle Bliss_op.png",
-    depthImage: "/Gentle Bliss Depth.png",
+    image: "/Gentle Bliss.png",
+    depthImage: "/Gentle Bliss Depthmap.png",
     isLight: false,
     price: 2000,
     isActive: true
@@ -44,8 +44,8 @@ export const products: Product[] = [
     desc: "L’hygiène n’est pas un luxe. Pusba, c’est la sécurité du quotidien, version camerounaise.", 
     color: "#16a34a", 
     bgColor: "#c3d5e5", 
-    image: "/Pusba_op.png",
-    depthImage: "/Pusba depthmap.png",
+    image: "/Pusba.png",
+    depthImage: "/Pusba Depthmap.png",
     isLight: false,
     price: 800,
     isActive: true
@@ -56,8 +56,8 @@ export const products: Product[] = [
     desc: "🍋 Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine. Simple, Efficace, Local", 
     color: "#16a34a", 
     bgColor: "#aeb48d", 
-    image: "/Enjoy 2_op.png",
-    depthImage: "/Enjoy 2 depthmap.png",
+    image: "/Enjoy.png",
+    depthImage: "/Enjoy Depthmap.png",
     isLight: true,
     price: 1200,
     isActive: true
