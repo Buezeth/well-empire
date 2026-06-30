@@ -206,25 +206,32 @@ const Visuals3D = () => {
           {/* Top Bar */}
           <div className="flex justify-between items-center w-full">
             
-            {/* Elegant Responsive Logo Wrapper */}
-            <div 
+            {/* Elegant Floating Logo Wrapper (No restrictive box, fully legible branding) */}
+            <motion.div 
               onClick={() => setActiveIndex(0)} 
-              className="flex items-center pointer-events-auto cursor-pointer group transition-transform duration-300 hover:scale-[1.03] active:scale-[0.97]"
+              initial={{ opacity: 0, y: -15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="pointer-events-auto cursor-pointer group flex items-center justify-center transition-transform duration-300 active:scale-[0.96]"
             >
-              <img 
+              <motion.img 
                 src="/logo.png" 
                 alt="Well Empire Logo" 
-                className="h-15 sm:h-14 md:h-30 w-auto object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.25)] transition-all duration-300"
+                animate={{
+                  filter: `drop-shadow(0 4px 10px rgba(0,0,0,0.3)) drop-shadow(0 0 12px ${currentProduct.color}22)`
+                }}
+                transition={{ duration: 0.8, ease: "easeInOut" }}
+                className="h-10 sm:h-11 md:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.04]"
               />
-            </div>
+            </motion.div>
             
             <div className={`flex items-center space-x-3 md:space-x-6 pointer-events-auto transition-colors duration-500 ${
               isLight ? 'text-neutral-900' : 'text-white'
             }`}>
               <div className="flex items-center gap-2 md:gap-3">
-                <span className={`font-mono text-[10px] md:text-xs tracking-[0.2em] ${isLight ? 'text-neutral-900/60' : 'text-white/60'}`}>
+                {/* <span className={`font-mono text-[10px] md:text-xs tracking-[0.2em] ${isLight ? 'text-neutral-900/60' : 'text-white/60'}`}>
                   {currentProduct.isActive ? 'ACTIF' : 'INACTIF'}
-                </span>
+                </span> */}
                 <div className={`w-7 h-7 md:w-8 md:h-8 rounded-full border flex items-center justify-center cursor-pointer transition-colors ${
                   isLight ? 'border-neutral-900/20 hover:bg-neutral-900/5' : 'border-white/20 hover:bg-white/10'
                 }`}>
@@ -281,7 +288,7 @@ const Visuals3D = () => {
 
                 {/* --- RESPONSIVE CAMEROON WHATSAPP ACTION BLOCK --- */}
                 <div className="flex flex-wrap items-center gap-3">
-                  {/* Interactive WhatsApp Button */}
+                  {/* Interactive WhatsApp Cameroon Contact Button */}
                   <a
                     href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappInquiryMessage)}`}
                     target="_blank"
