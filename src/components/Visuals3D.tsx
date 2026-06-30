@@ -162,6 +162,7 @@ const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, is
 
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
   const isScrolling = useRef(false);
   
   const touchStartX = useRef<number | null>(null);
@@ -169,6 +170,13 @@ const Visuals3D = () => {
 
   const currentProduct = products[activeIndex];
   const isLight = currentProduct.isLight ?? false;
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const nextProduct = () => {
     if (isScrolling.current) return;
@@ -224,7 +232,9 @@ const Visuals3D = () => {
     touchStartY.current = null;
   };
 
-  const whatsappInquiryMessage = `Bonjour Well Empire, je souhaite avoir plus d'informations ou commander le produit "${currentProduct.title}" au prix de ${currentProduct.price.toLocaleString('fr-FR')} FCFA. Pouvez-vous m'assister s'il vous plaît ?`;
+  const productVolumeLabel = currentProduct.volume ? ` (${currentProduct.volume})` : '';
+  const formattedProductPrice = `${currentProduct.price.toLocaleString('fr-FR')} FCFA${productVolumeLabel}`;
+  const whatsappInquiryMessage = `Bonjour Well Empire, je souhaite avoir plus d'informations ou commander le produit "${currentProduct.title}" au prix de ${formattedProductPrice}. Pouvez-vous m'assister s'il vous plaît ?`;
   
   return (
     <div className="w-screen h-screen bg-black md:p-4 flex items-center justify-center overflow-hidden font-sans">
@@ -283,8 +293,10 @@ const Visuals3D = () => {
                     position: 'absolute',
                   }}
                   animate={{
-                    y: isActive ? -10 : 40,
-                    scale: isActive ? 1.55 : 0.75, 
+                    // On mobile, translate slightly up (-50) to clear the bottom layout elegantly
+                    y: isActive ? (isMobile ? -50 : -10) : 40,
+                    // Grander scale (1.3) on mobile to fully utilize the newly liberated space
+                    scale: isActive ? (isMobile ? 1.3 : 1.55) : 0.75, 
                     opacity: isActive ? 1 : 0.0, 
                     zIndex: isActive ? 10 : 1,
                   }}
@@ -333,7 +345,7 @@ const Visuals3D = () => {
                   <ShoppingCart size={13} className={isLight ? 'text-neutral-900' : 'text-white'} />
                 </div>
                 <span className="font-mono text-xs md:text-sm font-medium">
-                  {currentProduct.price.toLocaleString('fr-FR')} FCFA
+                  {formattedProductPrice}
                 </span>
               </div>
             </div>
@@ -356,8 +368,8 @@ const Visuals3D = () => {
             </span>
           </div>
 
-          {/* Bottom Left Product Info */}
-          <div className="w-auto md:w-1/2 pointer-events-auto absolute bottom-24 md:bottom-12 left-6 md:left-12 text-left">
+          {/* Bottom Left Product Info - Lowered to bottom-8 on mobile to gain extra vertical breathing room */}
+          <div className="w-auto md:w-1/2 pointer-events-auto absolute bottom-8 md:bottom-12 left-6 right-6 md:right-auto md:left-12 text-left">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeIndex}
@@ -366,7 +378,7 @@ const Visuals3D = () => {
                 exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
               >
-                {/* 001/002 Index Label with Drop Shadow */}
+                {/* 001/002 Index Label */}
                 <div 
                   className={`font-mono text-xs tracking-[0.2em] mb-3 transition-colors duration-500 ${
                     isLight ? 'text-neutral-900/50' : 'text-white/60'
@@ -380,7 +392,7 @@ const Visuals3D = () => {
                   {(activeIndex + 1).toString().padStart(3, '0')}
                 </div>
 
-                {/* Product Title (e.g. GENTLE BLISS) with strong drop shadow to split overlay details */}
+                {/* Product Title */}
                 <h2 
                   className={`font-display text-4xl md:text-[100px] leading-[0.85] tracking-tight mb-4 uppercase transition-colors duration-500 ${
                     isLight ? 'text-neutral-900' : 'text-white'
@@ -396,7 +408,7 @@ const Visuals3D = () => {
                   ))}
                 </h2>
 
-                {/* Description Paragraph with high-contrast text shadow */}
+                {/* Description Paragraph */}
                 <p 
                   className={`font-mono text-wrap text-xs md:text-sm max-w-sm leading-relaxed mb-5 transition-colors duration-500 ${
                     isLight ? 'text-neutral-800/80' : 'text-white/85'
@@ -411,6 +423,25 @@ const Visuals3D = () => {
                   <br/><br/>
                   LA QUALITÉ ACCESSIBLE À TOUS. WELL👑EMPIRE
                 </p>
+
+                {/* Shipping & Delivery Minimalist Block */}
+                <div 
+                  className={`font-mono text-[11px] md:text-xs mb-5 flex flex-col gap-1 transition-colors duration-500 ${
+                    isLight ? 'text-neutral-900/60' : 'text-white/70'
+                  }`}
+                  style={{
+                    textShadow: isLight
+                      ? '0 1px 2px rgba(255, 255, 255, 0.2)'
+                      : '0 2px 4px rgba(0, 0, 0, 0.8)'
+                  }}
+                >
+                  <span className="flex items-center gap-1.5 font-bold">
+                    🎁 Première livraison gratuite !
+                  </span>
+                  <span className="flex items-center gap-1.5 opacity-90">
+                    📍 Livraison dès 1 000 FCFA — Expédition au besoin
+                  </span>
+                </div>
 
                 {/* --- RESPONSIVE CAMEROON WHATSAPP ACTION BLOCK --- */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -432,8 +463,8 @@ const Visuals3D = () => {
             </AnimatePresence>
           </div>
 
-          {/* Bottom Center Navigation Controls */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto flex items-center gap-6">
+          {/* Bottom Center Navigation Controls - Hidden on mobile */}
+          <div className="hidden md:flex absolute bottom-8 left-1/2 -translate-y-1/2 pointer-events-auto items-center gap-6">
             <button 
               onClick={prevProduct}
               className={`w-10 h-10 rounded-full border flex items-center justify-center transition-all cursor-pointer ${

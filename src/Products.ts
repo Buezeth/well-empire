@@ -11,6 +11,7 @@ export interface Product {
   isLight?: boolean;
   price: number; // Price in XAF (FCFA)
   isActive: boolean; // Controls whether 'ACTIF' or 'INACTIF' is shown
+  volume?: string; // Optional volume (e.g. "2L")
 }
 
 export const products: Product[] = [
@@ -23,7 +24,7 @@ export const products: Product[] = [
     image: "/Divin Cleanser.png",
     depthImage: "/Divin Cleanser Depthmap.png",
     isLight: false,
-    price: 1500,
+    price: 1000,
     isActive: true
   },
   { 
@@ -35,7 +36,8 @@ export const products: Product[] = [
     image: "/Gentle Bliss.png",
     depthImage: "/Gentle Bliss Depthmap.png",
     isLight: false,
-    price: 2000,
+    price: 4000,
+    volume: "2L",
     isActive: true
   },
   { 
@@ -47,7 +49,7 @@ export const products: Product[] = [
     image: "/Pusba.png",
     depthImage: "/Pusba Depthmap.png",
     isLight: false,
-    price: 800,
+    price: 1000,
     isActive: true
   },
   { 
@@ -59,7 +61,7 @@ export const products: Product[] = [
     image: "/Enjoy.png",
     depthImage: "/Enjoy Depthmap.png",
     isLight: true,
-    price: 1200,
+    price: 400,
     isActive: true
   },
 ];
