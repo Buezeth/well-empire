@@ -19,11 +19,35 @@ coverage/
 
 --- index.html ---
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Well Empire</title>
+    
+    <!-- Primary Meta Tags -->
+    <title>Well Empire — La Qualité Accessible à Tous</title>
+    <meta name="title" content="Well Empire — La Qualité Accessible à Tous" />
+    <meta name="description" content="Découvrez Well Empire, une gamme de produits ménagers et alimentaires locaux de qualité supérieure : Divine Cleanser, Gentle Bliss, Pusba et Enjoy." />
+    <meta name="keywords" content="Well Empire, Divine Cleanser, Gentle Bliss, Pusba, Enjoy, Cameroun, savon multi-usage, adoucissant textile, vinaigre blanc, produits ménagers locaux" />
+    <meta name="author" content="Well Empire" />
+
+    <!-- Open Graph / Facebook / LinkedIn -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Well Empire — La Qualité Accessible à Tous" />
+    <meta property="og:description" content="Découvrez notre gamme premium de produits ménagers et alimentaires conçus localement pour le quotidien : Divine Cleanser, Gentle Bliss, Pusba et Enjoy." />
+    <meta property="og:image" content="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="475" />
+    <meta property="og:image:alt" content="Well Empire - Les produits de qualité" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:title" content="Well Empire — La Qualité Accessible à Tous" />
+    <meta property="twitter:description" content="Gamme premium de nettoyants et de produits alimentaires pour le quotidien au Cameroun." />
+    <meta property="twitter:image" content="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+
+    <!-- Favicon & Brand Monogram -->
+    <link rel="icon" type="image/png" href="/logo.png" />
   </head>
   <body>
     <div id="root"></div>
@@ -31,15 +55,12 @@ coverage/
   </body>
 </html>
 
-
-
 --- metadata.json ---
 {
-  "name": "",
-  "description": "",
+  "name": "Well Empire",
+  "description": "Découvrez Well Empire, une gamme de produits ménagers et alimentaires locaux de qualité supérieure et accessibles à tous : Divine Cleanser, Gentle Bliss, Pusba et Enjoy.",
   "requestFramePermissions": []
 }
-
 
 --- package.json ---
 {
@@ -83,31 +104,19 @@ coverage/
 }
 
 
---- public/Divin Cleanser 2 depthmap.png ---
-[Binary file detected - content excluded]
-
---- public/Divin Cleanser 2.png ---
-[Binary file detected - content excluded]
-
---- public/Divin Cleanser depthmap.png ---
+--- public/Divin Cleanser Depthmap.png ---
 [Binary file detected - content excluded]
 
 --- public/Divin Cleanser.png ---
 [Binary file detected - content excluded]
 
---- public/Enjoy 2 depthmap.png ---
-[Binary file detected - content excluded]
-
---- public/Enjoy 2.png ---
-[Binary file detected - content excluded]
-
---- public/Enjoy depthmap.png ---
+--- public/Enjoy Depthmap.png ---
 [Binary file detected - content excluded]
 
 --- public/Enjoy.png ---
 [Binary file detected - content excluded]
 
---- public/Gentle Bliss Depth.png ---
+--- public/Gentle Bliss Depthmap.png ---
 [Binary file detected - content excluded]
 
 --- public/Gentle Bliss.png ---
@@ -116,23 +125,13 @@ coverage/
 --- public/logo.png ---
 [Binary file detected - content excluded]
 
---- public/Pusba depthmap.png ---
+--- public/Pusba Depthmap.png ---
 [Binary file detected - content excluded]
 
 --- public/Pusba.png ---
 [Binary file detected - content excluded]
 
 --- README.md ---
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/09bd60f8-b1c0-4e56-b993-6cf037b17712
-
 ## Run Locally
 
 **Prerequisites:**  Node.js
@@ -420,87 +419,6 @@ const BreezeEffect = ({ activeIndex, layer }: { activeIndex: number; layer: 'fro
 
 export default BreezeEffect;
 
---- src/components/Carousel.tsx ---
-// src/components/Carousel.tsx
-import { useFrame, useThree } from '@react-three/fiber';
-import React, { useRef } from 'react';
-import * as THREE from 'three';
-import { products } from '../Products';
-import Pillar from './Pillar';
-import SoapBottle from './SoapBottle';
-
-const CarouselItem = ({ product, index, activeIndex, total, isMobile }: any) => {
-  const groupRef = useRef<THREE.Group>(null);
-  
-  useFrame((state, delta) => {
-    if (!groupRef.current) return;
-    
-    let offset = index - activeIndex;
-    
-    if (offset > total / 2) offset -= total;
-    if (offset < -total / 2) offset += total;
-
-    const spacingX = 15; 
-    const targetX = offset * spacingX;
-    
-    const targetZ = offset === 0 ? 0 : -2;
-    const targetY = offset === 0 ? 0 : -1;
-    
-    // 1. INCREASED SCALE: Makes the hero product much larger
-    const baseScale = isMobile ? 0.9 : 1.45; 
-    const targetScale = offset === 0 ? baseScale : baseScale * 0.8;
-
-    if (Math.abs(groupRef.current.position.x - targetX) > spacingX * 1.5) {
-      groupRef.current.position.x = targetX;
-    }
-
-    const lerpSpeed = delta * 5; 
-    groupRef.current.position.x = THREE.MathUtils.lerp(groupRef.current.position.x, targetX, lerpSpeed);
-    groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, lerpSpeed);
-    groupRef.current.position.z = THREE.MathUtils.lerp(groupRef.current.position.z, targetZ, lerpSpeed);
-    groupRef.current.scale.setScalar(
-      THREE.MathUtils.lerp(groupRef.current.scale.x, targetScale, lerpSpeed)
-    );
-  });
-
-  return (
-    <group ref={groupRef}>
-      {/* <Pillar /> */}
-      <SoapBottle 
-        active={activeIndex === index} 
-        color={product.color} 
-        image={product.image} 
-        depthImage={product.depthImage}
-      />
-    </group>
-  );
-}
-
-const Carousel = ({ activeIndex }: { activeIndex: number }) => {
-  const { viewport } = useThree();
-  const isMobile = viewport.width < 5;
-  
-  // 2. ADJUSTED POSITION: Brings the product slightly closer to the center
-  const posX = isMobile ? 0 : 0.8; 
-
-  return (
-    <group position={[posX, -2.5, 0]}>
-      {products.map((prod, i) => (
-        <CarouselItem 
-          key={prod.id}
-          product={prod}
-          index={i}
-          activeIndex={activeIndex}
-          total={products.length}
-          isMobile={isMobile}
-        />
-      ))}
-    </group>
-  );
-}
-
-export default Carousel;
-
 --- src/components/DepthMapViewer.tsx ---
 // src/components/DepthMapViewer.tsx
 import React, { useEffect, useRef, useState } from 'react';
@@ -742,168 +660,6 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
 };
 
 export default DepthMapViewer;
-
---- src/components/Pillar.tsx ---
-import React from 'react'
-
-const Pillar = () => {
-  return (
-      <group position={[0, -2.5, 0]}>
-        {/* Sleek, modern dark pillar - brightened slightly to ensure visibility */}
-        <mesh castShadow receiveShadow position={[0, 0, 0]}>
-          <cylinderGeometry args={[0.9, 1.1, 5, 64]} />
-          <meshStandardMaterial color="#1a1a1f" roughness={0.6} metalness={0.3} />
-        </mesh>
-        
-        {/* Metallic top trim */}
-        <mesh castShadow receiveShadow position={[0, 2.55, 0]}>
-          <cylinderGeometry args={[0.92, 0.92, 0.1, 64]} />
-          <meshStandardMaterial color="#444444" roughness={0.2} metalness={0.8} />
-        </mesh>
-        
-        {/* Floating pedestal disc */}
-        <mesh castShadow receiveShadow position={[0, 2.7, 0]}>
-          <cylinderGeometry args={[0.8, 0.8, 0.05, 64]} />
-          <meshStandardMaterial color="#222222" roughness={0.4} metalness={0.5} />
-        </mesh>
-      </group>
-    );
-}
-
-export default Pillar
-
---- src/components/SoapBottle.tsx ---
-import { Float, useTexture } from '@react-three/drei';
-import { useFrame, useThree } from '@react-three/fiber';
-import React, { useEffect, useMemo, useRef } from 'react';
-import * as THREE from 'three';
-import { products } from '../Products';
-
-const SoapBottle = ({ active, color, image, depthImage }: { active: boolean, color: string, image: string, depthImage: string }) => {
-  const billboardRef = useRef<THREE.Group>(null);
-  const wobbleRef = useRef<THREE.Group>(null);
-  
-  const [texture, depthTexture] = useTexture([image, depthImage]);
-  const { gl } = useThree();
-
-  useEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = gl.capabilities.getMaxAnisotropy(); 
-    texture.minFilter = THREE.LinearMipMapLinearFilter;
-    texture.needsUpdate = true;
-
-    depthTexture.anisotropy = gl.capabilities.getMaxAnisotropy();
-    depthTexture.minFilter = THREE.LinearMipMapLinearFilter;
-    depthTexture.needsUpdate = true;
-  }, [texture, depthTexture, gl]);
-
-  const planeHeight = 4.5;
-  const txtImg: any = texture.image;
-  const aspectRatio = txtImg ? txtImg.width / txtImg.height : 1;
-  const planeWidth = planeHeight * aspectRatio;
-  
-  // 1. CREATE SOLID 3D VOLUME CURVE (Tapers to 0 at edges to seal the bottle)
-  const geometry = useMemo(() => {
-    // 32x32 vertices is optimal for a smooth curve; bump mapping handles the high-detail shading
-    const geo = new THREE.PlaneGeometry(planeWidth, planeHeight, 32, 32);
-    const pos = geo.attributes.position;
-    
-    // Increased depth to give a physically rounded, solid-looking bottle
-    const baseDepth = 1; 
-    
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const normX = x / (planeWidth / 2); 
-      // Cosine wave curves the bottle outwards in the center, tapering to 0 at the edges
-      const z = Math.cos(normX * (Math.PI / 2)) * baseDepth; 
-      pos.setZ(i, z);
-    }
-    
-    geo.computeVertexNormals(); 
-    return geo;
-  }, [planeWidth, planeHeight]);
-
-  useFrame(({ camera, clock }) => {
-    if (billboardRef.current) {
-      const worldPos = new THREE.Vector3();
-      billboardRef.current.getWorldPosition(worldPos);
-      const target = new THREE.Vector3(camera.position.x, worldPos.y, camera.position.z);
-      billboardRef.current.lookAt(target);
-    }
-
-    if (wobbleRef.current) {
-      if (active) {
-        const time = clock.elapsedTime;
-        wobbleRef.current.rotation.y = Math.sin(time * 0.6) * 0.08;
-        wobbleRef.current.rotation.x = Math.cos(time * 0.4) * 0.04;
-      } else {
-        wobbleRef.current.rotation.y = THREE.MathUtils.lerp(wobbleRef.current.rotation.y, 0, 0.02);
-        wobbleRef.current.rotation.x = THREE.MathUtils.lerp(wobbleRef.current.rotation.x, 0, 0.02);
-      }
-      const targetScale = active ? 1.1 : 0.85;
-      wobbleRef.current.scale.setScalar(THREE.MathUtils.lerp(wobbleRef.current.scale.x, targetScale, 0.1));
-    }
-  });
-
-  return (
-    <Float 
-      speed={active ? 1.5 : 0} 
-      rotationIntensity={0} 
-      floatIntensity={active ? 0.15 : 0} 
-      floatingRange={[-0.05, 0.05]}
-    >
-      <group ref={billboardRef} position={[0, 2.45, 0]}>
-        <group ref={wobbleRef}>
-          
-          {/* 2. FRONT FACE */}
-          <mesh geometry={geometry}>
-            <meshPhysicalMaterial 
-              map={texture}
-              // We use a bump map for clean, high-resolution 3D reflections and surface details
-              bumpMap={depthTexture}
-              bumpScale={0.18}
-              // We use a very subtle displacement just to give the labels a tiny physical depth pop
-              displacementMap={depthTexture}
-              displacementScale={0.06}
-              transparent={true}
-              alphaTest={0.05} 
-              roughness={0.12}
-              metalness={0.05}
-              clearcoat={1.0}
-              clearcoatRoughness={0.08}
-              envMapIntensity={3.0} // Emphasizes the city environment reflection map
-            />
-          </mesh>
-
-          {/* 3. BACK FACE (Flipped) */}
-          <mesh geometry={geometry} rotation={[0, Math.PI, 0]}>
-            <meshPhysicalMaterial 
-              map={texture}
-              bumpMap={depthTexture}
-              bumpScale={0.18}
-              displacementMap={depthTexture}
-              displacementScale={0.06}
-              transparent={true}
-              alphaTest={0.05}
-              roughness={0.12}
-              metalness={0.05}
-              clearcoat={1.0}
-              clearcoatRoughness={0.08}
-              envMapIntensity={3.0}
-            />
-          </mesh>
-
-        </group>
-      </group>
-    </Float>
-  );
-}
-
-products.forEach((product) => {
-  useTexture.preload([product.image, product.depthImage]);
-});
-
-export default SoapBottle;
 
 --- src/components/Visuals3D.tsx ---
 // src/components/Visuals3D.tsx
@@ -1404,8 +1160,8 @@ export const products: Product[] = [
     desc: "🧼 Produit multi-usage (ménage, lessive, vaisselle, véhicule, etc)", 
     color: "#2563eb", 
     bgColor: "#1fb6b7", 
-    image: "/Divin Cleanser 2.png",
-    depthImage: "/Divin Cleanser 2 depthmap.png",
+    image: "/Divin Cleanser.png",
+    depthImage: "/Divin Cleanser Depthmap.png",
     isLight: false,
     price: 1500,
     isActive: true
@@ -1417,7 +1173,7 @@ export const products: Product[] = [
     color: "#dc2626", 
     bgColor: "#15c6e1", 
     image: "/Gentle Bliss.png",
-    depthImage: "/Gentle Bliss Depth.png",
+    depthImage: "/Gentle Bliss Depthmap.png",
     isLight: false,
     price: 2000,
     isActive: true
@@ -1429,7 +1185,7 @@ export const products: Product[] = [
     color: "#16a34a", 
     bgColor: "#c3d5e5", 
     image: "/Pusba.png",
-    depthImage: "/Pusba depthmap.png",
+    depthImage: "/Pusba Depthmap.png",
     isLight: false,
     price: 800,
     isActive: true
@@ -1440,8 +1196,8 @@ export const products: Product[] = [
     desc: "🍋 Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine. Simple, Efficace, Local", 
     color: "#16a34a", 
     bgColor: "#aeb48d", 
-    image: "/Enjoy 2.png",
-    depthImage: "/Enjoy 2 depthmap.png",
+    image: "/Enjoy.png",
+    depthImage: "/Enjoy Depthmap.png",
     isLight: true,
     price: 1200,
     isActive: true
