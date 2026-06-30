@@ -348,11 +348,11 @@ const Visuals3D = () => {
               style={{ 
                 writingMode: 'vertical-rl',
                 textShadow: isLight
-                  ? '0 1px 2px rgba(255, 255, 255, 0.8)'
-                  : '0 2px 4px rgba(0, 0, 0, 0.85)'
+                  ? '0 1px 2px rgba(255, 255, 255, 0.2)'
+                  : '0 2px 4px rgba(0, 0, 0, 0.2)'
               }}
             >
-              CLEANSERS
+              WELL EMPIRE
             </span>
           </div>
 
