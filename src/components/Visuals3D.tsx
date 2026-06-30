@@ -169,6 +169,10 @@ const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
   
+  // Touch refs to handle swipe gestures on mobile
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
   const currentProduct = products[activeIndex];
   const isLight = currentProduct.isLight ?? false;
 
@@ -176,14 +180,18 @@ const Visuals3D = () => {
     if (isScrolling.current) return;
     isScrolling.current = true;
     setActiveIndex((prev) => (prev + 1) % products.length);
-    setTimeout(() => isScrolling.current = false, 500);
+    setTimeout(() => {
+      isScrolling.current = false;
+    }, 500);
   };
 
   const prevProduct = () => {
     if (isScrolling.current) return;
     isScrolling.current = true;
     setActiveIndex((prev) => (prev - 1 + products.length) % products.length);
-    setTimeout(() => isScrolling.current = false, 500);
+    setTimeout(() => {
+      isScrolling.current = false;
+    }, 500);
   };
   
   useEffect(() => {
@@ -195,18 +203,52 @@ const Visuals3D = () => {
     return () => window.removeEventListener('wheel', handleWheel);
   }, [activeIndex]);
 
+  // Touch handlers to process swiping on mobile screens
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const diffX = touchStartX.current - e.changedTouches[0].clientX;
+    const diffY = touchStartY.current - e.changedTouches[0].clientY;
+
+    const swipeThreshold = 50; // Minimum drag distance to recognize a swipe
+    
+    // Check if horizontal movement is more pronounced than vertical movement
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+      if (Math.abs(diffX) > swipeThreshold) {
+        if (diffX > 0) {
+          // Swiped Left -> go to next product
+          nextProduct();
+        } else {
+          // Swiped Right -> go to previous product
+          prevProduct();
+        }
+      }
+    }
+
+    // Reset touch variables
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
   // Dynamic template message encoded for instant delivery
   const whatsappInquiryMessage = `Bonjour Well Empire, je souhaite avoir plus d'informations ou commander le produit "${currentProduct.title}" au prix de ${currentProduct.price.toLocaleString('fr-FR')} FCFA. Pouvez-vous m'assister s'il vous plaît ?`;
   
   return (
     <div className="w-screen h-screen bg-black md:p-4 flex items-center justify-center overflow-hidden font-sans">
       
-      {/* Dynamic Background Container */}
+      {/* Dynamic Background Container with added swipe gestures */}
       <motion.main 
         initial={{ backgroundColor: products[0].bgColor }}
         animate={{ backgroundColor: currentProduct.bgColor }}
         transition={{ duration: 1.2, ease: "easeInOut" }}
         className="relative w-full h-full md:rounded-4xl overflow-hidden shadow-2xl"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
         
         {/* Subtle African Beveled Border Frame */}
@@ -298,9 +340,6 @@ const Visuals3D = () => {
               isLight ? 'text-neutral-900' : 'text-white'
             }`}>
               <div className="flex items-center gap-2 md:gap-3">
-                {/* <span className={`font-mono text-[10px] md:text-xs tracking-[0.2em] ${isLight ? 'text-neutral-900/60' : 'text-white/60'}`}>
-                  {currentProduct.isActive ? 'ACTIF' : 'INACTIF'}
-                </span> */}
                 <div className={`w-7 h-7 md:w-8 md:h-8 rounded-full border flex items-center justify-center cursor-pointer transition-colors ${
                   isLight ? 'border-neutral-900/20 hover:bg-neutral-900/5' : 'border-white/20 hover:bg-white/10'
                 }`}>
@@ -326,7 +365,7 @@ const Visuals3D = () => {
           </div>
 
           {/* Bottom Left Product Info */}
-          <div className="w-full md:w-1/2 pointer-events-auto absolute bottom-24 md:bottom-12 left-6 md:left-12 text-left">
+          <div className="w-auto md:w-1/2 pointer-events-auto absolute bottom-24 md:bottom-12 left-6 md:left-12 text-left">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeIndex}
@@ -347,7 +386,7 @@ const Visuals3D = () => {
                     <span key={i} className="block">{word}</span>
                   ))}
                 </h2>
-                <p className={`font-mono text-xs md:text-sm max-w-sm leading-relaxed mb-5 transition-colors duration-500 ${
+                <p className={`font-mono text-wrap text-xs md:text-sm max-w-sm leading-relaxed mb-5 transition-colors duration-500 ${
                   isLight ? 'text-neutral-800/75' : 'text-white/60'
                 }`}>
                   {currentProduct.desc}
