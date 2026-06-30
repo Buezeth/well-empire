@@ -291,12 +291,15 @@ const Visuals3D = () => {
                   transition={{ type: "spring", stiffness: 100, damping: 20 }}
                   className="w-[90vw] md:w-[50vw] h-[70vh] md:h-[90vh] max-w-[550px] max-h-[850px] flex items-center justify-center pointer-events-auto"
                 >
-                  <DepthMapViewer
-                    image={product.image}
-                    depthImage={product.depthImage}
-                    active={isActive}
-                    color={product.color}
-                  />
+                  {/* ONLY MOUNT WEBGL CANVAS WHEN ACTIVE TO AVOID MULTIPLE CONTEXT ERRORS */}
+                  {isActive && (
+                    <DepthMapViewer
+                      image={product.image}
+                      depthImage={product.depthImage}
+                      active={isActive}
+                      color={product.color}
+                    />
+                  )}
                 </motion.div>
               );
             })}
@@ -370,8 +373,8 @@ const Visuals3D = () => {
                   }`}
                   style={{
                     textShadow: isLight
-                      ? '0 1px 1px rgba(255, 255, 255, 0.1)'
-                      : '0 1px 1px rgba(0, 0, 0, 0.1)'
+                      ? '0 1px 2px rgba(255, 255, 255, 0.2)'
+                      : '0 2px 4px rgba(0, 0, 0, 0.2)'
                   }}
                 >
                   {(activeIndex + 1).toString().padStart(3, '0')}
@@ -384,8 +387,8 @@ const Visuals3D = () => {
                   }`}
                   style={{
                     textShadow: isLight
-                      ? '0 1px 3px rgba(255, 255, 255, 0.1)'
-                      : '0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.95)'
+                      ? '0 1px 3px rgba(255, 255, 255, 0.2)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.95)'
                   }}
                 >
                   {currentProduct.title.split(' ').map((word, i) => (
@@ -400,7 +403,7 @@ const Visuals3D = () => {
                   }`}
                   style={{
                     textShadow: isLight
-                      ? '0 1px 2px rgba(255, 255, 255, 0.2)'
+                      ? '0 1px 2px rgba(255, 255, 255, 0.3)'
                       : '0 2px 6px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 1)'
                   }}
                 >

@@ -20,7 +20,8 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Use default premultipliedAlpha: true to match browser composite expectation
+    let isCurrent = true; // Guard flag to prevent race conditions during async load
+
     const gl = canvas.getContext('webgl', { 
       alpha: true, 
       premultipliedAlpha: false,
@@ -32,7 +33,6 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     }
     glRef.current = gl;
 
-    // Enable alpha blending and use the correct premultiplied blending function
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -73,21 +73,12 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       }
 
       void main() {
-        // Sample original image to establish layout boundary
         vec4 originalColor = texture2D(uImage, vUv);
-        
         float depth = getSmoothedDepth(vUv);
-        
-        // Scale down coordinate shifting at the transparent margins
         float edgeDamp = originalColor.a * originalColor.a;
         vec2 displacement = uOffset * (depth * 0.035) * edgeDamp;
-        
         vec4 color = texture2D(uImage, vUv + displacement);
-        
-        // Clean anti-aliased alpha boundary
         color.a = min(color.a, originalColor.a);
-        
-        // Output premultiplied alpha (RGB multiplied by alpha) to match the WebGL compositor settings
         gl_FragColor = vec4(color.rgb * color.a, color.a);
       }
     `;
@@ -156,6 +147,8 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => {
+          // If the effect was cleaned up before download finished, discard to prevent race conditions
+          if (!isCurrent) return;
           gl.bindTexture(gl.TEXTURE_2D, texture);
           gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
           if (texture === imageTex) {
@@ -171,10 +164,9 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       loadTextureImage(image, imageTex!),
       loadTextureImage(depthImage, depthTex!)
     ]).then(() => {
-      render();
+      if (isCurrent) render();
     });
 
-    // ResizeObserver tracks actual visual bounds on layout or ratio changes
     const resizeObserver = new ResizeObserver(() => {
       const dpr = window.devicePixelRatio || 1;
       const width = canvas.clientWidth;
@@ -188,6 +180,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
     resizeObserver.observe(canvas);
 
     const render = (time = 0) => {
+      if (!isCurrent) return;
       const t = time * 0.0012; 
       const targetX = Math.sin(t) * 0.15;
       const targetY = Math.cos(t * 1.3) * 0.06;
@@ -212,9 +205,8 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       requestRef.current = requestAnimationFrame(render);
     };
 
-    render();
-
     return () => {
+      isCurrent = false; // Mark current run as inactive
       resizeObserver.disconnect();
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       gl.deleteBuffer(buffer);
