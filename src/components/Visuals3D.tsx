@@ -10,7 +10,7 @@ import { ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 // CUSTOMIZE YOUR CAMEROON BUSINESS WHATSAPP CONTACT:
 // Use standard international format without '+' or leading zeros (e.g., '237XXXXXXXXX')
 // =========================================================================
-const WHATSAPP_NUMBER = "237677777777"; 
+const WHATSAPP_NUMBER = "237690166142"; 
 
 // Toggle this to display the big background typography
 const SHOW_BACKGROUND_TEXT = true;
