@@ -37,7 +37,7 @@ const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const strokeWidth = isMobile ? 12 : 24; // Thicker border on desktop to showcase geometric details
+  const strokeWidth = isMobile ? 12 : 24;
   const halfStroke = strokeWidth / 2;
   const radius = isMobile ? 0 : 24; 
 
@@ -45,13 +45,12 @@ const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
     <div 
       className={`absolute inset-0 pointer-events-none z-10 transition-colors duration-500 ${
         isLight 
-          ? 'text-neutral-950/25' // Increased opacity to 25% for elegant visibility on light backgrounds
-          : 'text-white/20'       // Increased opacity to 20% for glowing details on dark backgrounds
+          ? 'text-neutral-950/25' 
+          : 'text-white/20'       
       }`}
     >
       <svg className="w-full h-full overflow-hidden">
         <defs>
-          {/* Mapping the pattern width and height to the stroke width ensures the 40x40 design scales perfectly */}
           <pattern 
             id="african-tribal-border" 
             width={strokeWidth} 
@@ -108,8 +107,8 @@ const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, is
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
-    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2); // normalize to range -1 to 1
-    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2); // normalize to range -1 to 1
+    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
     setMousePos({ x, y });
   };
 
@@ -119,7 +118,6 @@ const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, is
 
   const handleClick = () => {
     setSpinAngle(prev => prev + 360);
-    // Cycles products dynamically upon click
     setActiveIndex((prev: number) => (prev + 1) % products.length);
   };
 
@@ -134,7 +132,6 @@ const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, is
       transition={{ duration: 0.8, ease: "easeOut" }}
       className="pointer-events-auto cursor-pointer group flex items-center justify-center relative select-none w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 active:scale-[0.96] transition-transform duration-300"
     >
-      {/* Soft Ambient Product Glow behind the logo (only on dark backgrounds) */}
       {!isLight && (
         <div 
           className="absolute inset-0 rounded-full transition-all duration-700 pointer-events-none z-0"
@@ -145,7 +142,6 @@ const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, is
         />
       )}
 
-      {/* High-Resolution Monogram Image with adaptive color contrast */}
       <motion.img 
         src="/logo.png" 
         alt="Well Empire Monogram" 
@@ -153,7 +149,6 @@ const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, is
           x: mousePos.x * 2.5,
           y: mousePos.y * 2.5,
           rotate: spinAngle,
-          // Solid dark charcoal on light background products, pure crisp white on dark background products
           filter: isLight 
             ? `brightness(0) opacity(0.85) drop-shadow(0 2px 4px rgba(0,0,0,0.1))` 
             : `brightness(0) invert(1) opacity(0.9) drop-shadow(0 0 10px ${currentProduct.color}22)`
@@ -169,7 +164,6 @@ const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
   
-  // Touch refs to handle swipe gestures on mobile
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
 
@@ -203,7 +197,6 @@ const Visuals3D = () => {
     return () => window.removeEventListener('wheel', handleWheel);
   }, [activeIndex]);
 
-  // Touch handlers to process swiping on mobile screens
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
@@ -215,33 +208,27 @@ const Visuals3D = () => {
     const diffX = touchStartX.current - e.changedTouches[0].clientX;
     const diffY = touchStartY.current - e.changedTouches[0].clientY;
 
-    const swipeThreshold = 50; // Minimum drag distance to recognize a swipe
+    const swipeThreshold = 50;
     
-    // Check if horizontal movement is more pronounced than vertical movement
     if (Math.abs(diffX) > Math.abs(diffY)) {
       if (Math.abs(diffX) > swipeThreshold) {
         if (diffX > 0) {
-          // Swiped Left -> go to next product
           nextProduct();
         } else {
-          // Swiped Right -> go to previous product
           prevProduct();
         }
       }
     }
 
-    // Reset touch variables
     touchStartX.current = null;
     touchStartY.current = null;
   };
 
-  // Dynamic template message encoded for instant delivery
   const whatsappInquiryMessage = `Bonjour Well Empire, je souhaite avoir plus d'informations ou commander le produit "${currentProduct.title}" au prix de ${currentProduct.price.toLocaleString('fr-FR')} FCFA. Pouvez-vous m'assister s'il vous plaît ?`;
   
   return (
     <div className="w-screen h-screen bg-black md:p-4 flex items-center justify-center overflow-hidden font-sans">
       
-      {/* Dynamic Background Container with added swipe gestures */}
       <motion.main 
         initial={{ backgroundColor: products[0].bgColor }}
         animate={{ backgroundColor: currentProduct.bgColor }}
@@ -251,7 +238,6 @@ const Visuals3D = () => {
         onTouchEnd={handleTouchEnd}
       >
         
-        {/* Subtle African Beveled Border Frame */}
         <SubtleAfricanBorders isLight={isLight} />
 
         {/* Soft Center Glow */}
@@ -327,8 +313,6 @@ const Visuals3D = () => {
           
           {/* Top Bar */}
           <div className="flex justify-between items-center w-full">
-            
-            {/* Big, Visible Free-floating Adaptive Monogram Logo */}
             <LuxuryLogo 
               activeIndex={activeIndex}
               currentProduct={currentProduct}
@@ -358,7 +342,12 @@ const Visuals3D = () => {
               className={`font-mono text-xs tracking-[0.2em] font-bold transition-colors cursor-pointer block ${
                 isLight ? 'text-neutral-900' : 'text-white'
               }`} 
-              style={{ writingMode: 'vertical-rl' }}
+              style={{ 
+                writingMode: 'vertical-rl',
+                textShadow: isLight
+                  ? '0 1px 2px rgba(255, 255, 255, 0.8)'
+                  : '0 2px 4px rgba(0, 0, 0, 0.85)'
+              }}
             >
               CLEANSERS
             </span>
@@ -374,21 +363,47 @@ const Visuals3D = () => {
                 exit={{ opacity: 0, y: -20, filter: 'blur(10px)' }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
               >
-                <div className={`font-mono text-xs tracking-[0.2em] mb-3 transition-colors duration-500 ${
-                  isLight ? 'text-neutral-900/40' : 'text-white/50'
-                }`}>
+                {/* 001/002 Index Label with Drop Shadow */}
+                <div 
+                  className={`font-mono text-xs tracking-[0.2em] mb-3 transition-colors duration-500 ${
+                    isLight ? 'text-neutral-900/50' : 'text-white/60'
+                  }`}
+                  style={{
+                    textShadow: isLight
+                      ? '0 1px 1px rgba(255, 255, 255, 0.1)'
+                      : '0 1px 1px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
                   {(activeIndex + 1).toString().padStart(3, '0')}
                 </div>
-                <h2 className={`font-display text-4xl md:text-[100px] leading-[0.85] tracking-tight mb-4 uppercase transition-colors duration-500 ${
-                  isLight ? 'text-neutral-900' : 'text-white'
-                }`}>
+
+                {/* Product Title (e.g. GENTLE BLISS) with strong drop shadow to split overlay details */}
+                <h2 
+                  className={`font-display text-4xl md:text-[100px] leading-[0.85] tracking-tight mb-4 uppercase transition-colors duration-500 ${
+                    isLight ? 'text-neutral-900' : 'text-white'
+                  }`}
+                  style={{
+                    textShadow: isLight
+                      ? '0 1px 3px rgba(255, 255, 255, 0.1)'
+                      : '0 4px 12px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.95)'
+                  }}
+                >
                   {currentProduct.title.split(' ').map((word, i) => (
                     <span key={i} className="block">{word}</span>
                   ))}
                 </h2>
-                <p className={`font-mono text-wrap text-xs md:text-sm max-w-sm leading-relaxed mb-5 transition-colors duration-500 ${
-                  isLight ? 'text-neutral-800/75' : 'text-white/60'
-                }`}>
+
+                {/* Description Paragraph with high-contrast text shadow */}
+                <p 
+                  className={`font-mono text-wrap text-xs md:text-sm max-w-sm leading-relaxed mb-5 transition-colors duration-500 ${
+                    isLight ? 'text-neutral-800/80' : 'text-white/85'
+                  }`}
+                  style={{
+                    textShadow: isLight
+                      ? '0 1px 2px rgba(255, 255, 255, 0.2)'
+                      : '0 2px 6px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 1)'
+                  }}
+                >
                   {currentProduct.desc}
                   <br/><br/>
                   LA QUALITÉ ACCESSIBLE À TOUS. WELL👑EMPIRE
@@ -396,7 +411,6 @@ const Visuals3D = () => {
 
                 {/* --- RESPONSIVE CAMEROON WHATSAPP ACTION BLOCK --- */}
                 <div className="flex flex-wrap items-center gap-3">
-                  {/* Interactive WhatsApp Button */}
                   <a
                     href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappInquiryMessage)}`}
                     target="_blank"

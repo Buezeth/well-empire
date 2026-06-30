@@ -31,7 +31,7 @@ export const products: Product[] = [
     title: "GENTLE BLISS", 
     desc: "🌸 Le linge qui sent bon, même après une longue journée ? Gentle Bliss fait le travail.", 
     color: "#dc2626", 
-    bgColor: "#15c6e1", 
+    bgColor: "#dd8fc8", 
     image: "/Gentle Bliss.png",
     depthImage: "/Gentle Bliss Depthmap.png",
     isLight: false,
