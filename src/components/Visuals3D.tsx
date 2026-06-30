@@ -26,7 +26,7 @@ const WhatsAppIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 
-// Continuous, beveled pattern border framing the container perfectly
+// Continuous, beveled pattern border framing the container clearly
 const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -37,7 +37,7 @@ const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const strokeWidth = 16;
+  const strokeWidth = isMobile ? 12 : 24; // Thicker border on desktop to showcase geometric details
   const halfStroke = strokeWidth / 2;
   const radius = isMobile ? 0 : 24; 
 
@@ -45,25 +45,32 @@ const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
     <div 
       className={`absolute inset-0 pointer-events-none z-10 transition-colors duration-500 ${
         isLight 
-          ? 'text-neutral-950/[0.04]' 
-          : 'text-white/[0.05]'
+          ? 'text-neutral-950/25' // Increased opacity to 25% for elegant visibility on light backgrounds
+          : 'text-white/20'       // Increased opacity to 20% for glowing details on dark backgrounds
       }`}
     >
       <svg className="w-full h-full overflow-hidden">
         <defs>
-          <pattern id="african-tribal-border" width="40" height="40" patternUnits="userSpaceOnUse" viewBox="0 0 40 40">
-            <path d="M0 0 L40 40 M40 0 L0 40" stroke="currentColor" strokeWidth="0.5" opacity="0.15" fill="none" />
-            <polygon points="20,4 36,20 20,36 4,20" stroke="currentColor" strokeWidth="1.2" fill="none" />
-            <polygon points="20,10 30,20 20,30 10,20" stroke="currentColor" strokeWidth="0.8" fill="none" />
-            <circle cx="20" cy="20" r="2" fill="currentColor" />
-            <polygon points="0,0 8,0 0,8" fill="currentColor" opacity="0.4" />
-            <polygon points="40,0 32,0 40,8" fill="currentColor" opacity="0.4" />
-            <polygon points="0,40 8,40 0,32" fill="currentColor" opacity="0.4" />
-            <polygon points="40,40 32,40 40,32" fill="currentColor" opacity="0.4" />
-            <circle cx="20" cy="1" r="1.5" fill="currentColor" />
-            <circle cx="20" cy="39" r="1.5" fill="currentColor" />
-            <circle cx="1" cy="20" r="1.5" fill="currentColor" />
-            <circle cx="39" cy="20" r="1.5" fill="currentColor" />
+          {/* Mapping the pattern width and height to the stroke width ensures the 40x40 design scales perfectly */}
+          <pattern 
+            id="african-tribal-border" 
+            width={strokeWidth} 
+            height={strokeWidth} 
+            patternUnits="userSpaceOnUse" 
+            viewBox="0 0 40 40"
+          >
+            <path d="M0 0 L40 40 M40 0 L0 40" stroke="currentColor" strokeWidth="1" opacity="0.3" fill="none" />
+            <polygon points="20,4 36,20 20,36 4,20" stroke="currentColor" strokeWidth="1.8" fill="none" />
+            <polygon points="20,10 30,20 20,30 10,20" stroke="currentColor" strokeWidth="1" fill="none" />
+            <circle cx="20" cy="20" r="3" fill="currentColor" />
+            <polygon points="0,0 8,0 0,8" fill="currentColor" opacity="0.6" />
+            <polygon points="40,0 32,0 40,8" fill="currentColor" opacity="0.6" />
+            <polygon points="0,40 8,40 0,32" fill="currentColor" opacity="0.6" />
+            <polygon points="40,40 32,40 40,32" fill="currentColor" opacity="0.6" />
+            <circle cx="20" cy="1.5" r="2" fill="currentColor" />
+            <circle cx="20" cy="38.5" r="2" fill="currentColor" />
+            <circle cx="1.5" cy="20" r="2" fill="currentColor" />
+            <circle cx="38.5" cy="20" r="2" fill="currentColor" />
           </pattern>
         </defs>
         <rect 
@@ -409,10 +416,10 @@ const Visuals3D = () => {
 
         {/* Subtle Decorative Crosshairs */}
         <div className={`absolute top-[20%] left-[30%] text-xs font-mono pointer-events-none hidden md:block transition-colors duration-500 ${
-          isLight ? 'text-neutral-900/10' : 'text-white/10'
+          isLight ? 'text-neutral-900/30' : 'text-white/25'
         }`}>+</div>
         <div className={`absolute bottom-[30%] right-[25%] text-xs font-mono pointer-events-none hidden md:block transition-colors duration-500 ${
-          isLight ? 'text-neutral-900/10' : 'text-white/10'
+          isLight ? 'text-neutral-900/30' : 'text-white/25'
         }`}>+</div>
         
       </motion.main>
