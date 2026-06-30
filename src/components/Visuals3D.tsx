@@ -85,6 +85,79 @@ const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
   );
 };
 
+// Custom interactive Luxury adaptive contrast logo component
+interface LuxuryLogoProps {
+  activeIndex: number;
+  currentProduct: any;
+  isLight: boolean;
+  setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, isLight, setActiveIndex }) => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [spinAngle, setSpinAngle] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2); // normalize to range -1 to 1
+    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2); // normalize to range -1 to 1
+    setMousePos({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setMousePos({ x: 0, y: 0 });
+  };
+
+  const handleClick = () => {
+    setSpinAngle(prev => prev + 360);
+    // Cycles products dynamically upon click
+    setActiveIndex((prev: number) => (prev + 1) % products.length);
+  };
+
+  return (
+    <motion.div 
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
+      initial={{ opacity: 0, y: -15, scale: 0.95, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="pointer-events-auto cursor-pointer group flex items-center justify-center relative select-none w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 active:scale-[0.96] transition-transform duration-300"
+    >
+      {/* Soft Ambient Product Glow behind the logo (only on dark backgrounds) */}
+      {!isLight && (
+        <div 
+          className="absolute inset-0 rounded-full transition-all duration-700 pointer-events-none z-0"
+          style={{
+            filter: `blur(15px)`,
+            background: `radial-gradient(circle, ${currentProduct.color}22 0%, transparent 70%)`,
+          }}
+        />
+      )}
+
+      {/* High-Resolution Monogram Image with adaptive color contrast */}
+      <motion.img 
+        src="/logo.png" 
+        alt="Well Empire Monogram" 
+        animate={{
+          x: mousePos.x * 2.5,
+          y: mousePos.y * 2.5,
+          rotate: spinAngle,
+          // Solid dark charcoal on light background products, pure crisp white on dark background products
+          filter: isLight 
+            ? `brightness(0) opacity(0.85) drop-shadow(0 2px 4px rgba(0,0,0,0.1))` 
+            : `brightness(0) invert(1) opacity(0.9) drop-shadow(0 0 10px ${currentProduct.color}22)`
+        }}
+        transition={{ type: "spring", stiffness: 120, damping: 14 }}
+        className="w-full h-full object-contain pointer-events-none select-none z-10 opacity-85 group-hover:opacity-100 transition-opacity duration-300"
+      />
+    </motion.div>
+  );
+};
+
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
@@ -206,24 +279,13 @@ const Visuals3D = () => {
           {/* Top Bar */}
           <div className="flex justify-between items-center w-full">
             
-            {/* Elegant Floating Logo Wrapper (No restrictive box, fully legible branding) */}
-            <motion.div 
-              onClick={() => setActiveIndex(0)} 
-              initial={{ opacity: 0, y: -15, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="pointer-events-auto cursor-pointer group flex items-center justify-center transition-transform duration-300 active:scale-[0.96]"
-            >
-              <motion.img 
-                src="/logo.png" 
-                alt="Well Empire Logo" 
-                animate={{
-                  filter: `drop-shadow(0 4px 10px rgba(0,0,0,0.3)) drop-shadow(0 0 12px ${currentProduct.color}22)`
-                }}
-                transition={{ duration: 0.8, ease: "easeInOut" }}
-                className="h-10 sm:h-11 md:h-14 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.04]"
-              />
-            </motion.div>
+            {/* Big, Visible Free-floating Adaptive Monogram Logo */}
+            <LuxuryLogo 
+              activeIndex={activeIndex}
+              currentProduct={currentProduct}
+              isLight={isLight}
+              setActiveIndex={setActiveIndex}
+            />
             
             <div className={`flex items-center space-x-3 md:space-x-6 pointer-events-auto transition-colors duration-500 ${
               isLight ? 'text-neutral-900' : 'text-white'
@@ -283,12 +345,12 @@ const Visuals3D = () => {
                 }`}>
                   {currentProduct.desc}
                   <br/><br/>
-                  Formulated with premium botanical extracts for a superior and refreshing cleansing experience.
+                  LA QUALITÉ ACCESSIBLE À TOUS. WELL👑EMPIRE
                 </p>
 
                 {/* --- RESPONSIVE CAMEROON WHATSAPP ACTION BLOCK --- */}
                 <div className="flex flex-wrap items-center gap-3">
-                  {/* Interactive WhatsApp Cameroon Contact Button */}
+                  {/* Interactive WhatsApp Button */}
                   <a
                     href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappInquiryMessage)}`}
                     target="_blank"

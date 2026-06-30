@@ -993,6 +993,79 @@ const SubtleAfricanBorders = ({ isLight }: { isLight: boolean }) => {
   );
 };
 
+// Custom interactive Luxury adaptive contrast logo component
+interface LuxuryLogoProps {
+  activeIndex: number;
+  currentProduct: any;
+  isLight: boolean;
+  setActiveIndex: React.Dispatch<React.SetStateAction<number>>;
+}
+
+const LuxuryLogo: React.FC<LuxuryLogoProps> = ({ activeIndex, currentProduct, isLight, setActiveIndex }) => {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [spinAngle, setSpinAngle] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2); // normalize to range -1 to 1
+    const y = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2); // normalize to range -1 to 1
+    setMousePos({ x, y });
+  };
+
+  const handleMouseLeave = () => {
+    setMousePos({ x: 0, y: 0 });
+  };
+
+  const handleClick = () => {
+    setSpinAngle(prev => prev + 360);
+    // Cycles products dynamically upon click
+    setActiveIndex((prev: number) => (prev + 1) % products.length);
+  };
+
+  return (
+    <motion.div 
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
+      initial={{ opacity: 0, y: -15, scale: 0.95, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="pointer-events-auto cursor-pointer group flex items-center justify-center relative select-none w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 active:scale-[0.96] transition-transform duration-300"
+    >
+      {/* Soft Ambient Product Glow behind the logo (only on dark backgrounds) */}
+      {!isLight && (
+        <div 
+          className="absolute inset-0 rounded-full transition-all duration-700 pointer-events-none z-0"
+          style={{
+            filter: `blur(15px)`,
+            background: `radial-gradient(circle, ${currentProduct.color}22 0%, transparent 70%)`,
+          }}
+        />
+      )}
+
+      {/* High-Resolution Monogram Image with adaptive color contrast */}
+      <motion.img 
+        src="/logo.png" 
+        alt="Well Empire Monogram" 
+        animate={{
+          x: mousePos.x * 2.5,
+          y: mousePos.y * 2.5,
+          rotate: spinAngle,
+          // Solid dark charcoal on light background products, pure crisp white on dark background products
+          filter: isLight 
+            ? `brightness(0) opacity(0.85) drop-shadow(0 2px 4px rgba(0,0,0,0.1))` 
+            : `brightness(0) invert(1) opacity(0.9) drop-shadow(0 0 10px ${currentProduct.color}22)`
+        }}
+        transition={{ type: "spring", stiffness: 120, damping: 14 }}
+        className="w-full h-full object-contain pointer-events-none select-none z-10 opacity-85 group-hover:opacity-100 transition-opacity duration-300"
+      />
+    </motion.div>
+  );
+};
+
 const Visuals3D = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const isScrolling = useRef(false);
@@ -1114,25 +1187,21 @@ const Visuals3D = () => {
           {/* Top Bar */}
           <div className="flex justify-between items-center w-full">
             
-            {/* Elegant Responsive Logo Wrapper */}
-            <div 
-              onClick={() => setActiveIndex(0)} 
-              className="flex items-center pointer-events-auto cursor-pointer group transition-transform duration-300 hover:scale-[1.03] active:scale-[0.97]"
-            >
-              <img 
-                src="/logo.png" 
-                alt="Well Empire Logo" 
-                className="h-15 sm:h-14 md:h-30 w-auto object-contain drop-shadow-[0_4px_8px_rgba(0,0,0,0.25)] transition-all duration-300"
-              />
-            </div>
+            {/* Big, Visible Free-floating Adaptive Monogram Logo */}
+            <LuxuryLogo 
+              activeIndex={activeIndex}
+              currentProduct={currentProduct}
+              isLight={isLight}
+              setActiveIndex={setActiveIndex}
+            />
             
             <div className={`flex items-center space-x-3 md:space-x-6 pointer-events-auto transition-colors duration-500 ${
               isLight ? 'text-neutral-900' : 'text-white'
             }`}>
               <div className="flex items-center gap-2 md:gap-3">
-                <span className={`font-mono text-[10px] md:text-xs tracking-[0.2em] ${isLight ? 'text-neutral-900/60' : 'text-white/60'}`}>
+                {/* <span className={`font-mono text-[10px] md:text-xs tracking-[0.2em] ${isLight ? 'text-neutral-900/60' : 'text-white/60'}`}>
                   {currentProduct.isActive ? 'ACTIF' : 'INACTIF'}
-                </span>
+                </span> */}
                 <div className={`w-7 h-7 md:w-8 md:h-8 rounded-full border flex items-center justify-center cursor-pointer transition-colors ${
                   isLight ? 'border-neutral-900/20 hover:bg-neutral-900/5' : 'border-white/20 hover:bg-white/10'
                 }`}>
@@ -1184,7 +1253,7 @@ const Visuals3D = () => {
                 }`}>
                   {currentProduct.desc}
                   <br/><br/>
-                  Formulated with premium botanical extracts for a superior and refreshing cleansing experience.
+                  LA QUALITÉ ACCESSIBLE À TOUS. WELL👑EMPIRE
                 </p>
 
                 {/* --- RESPONSIVE CAMEROON WHATSAPP ACTION BLOCK --- */}
@@ -1325,7 +1394,7 @@ export const products: Product[] = [
   { 
     id: 0, 
     title: "DIVINE CLEANSER", 
-    desc: "For multi-purpose cleaning - 1L / Pour un nettoyage multi-usage ultra-efficace", 
+    desc: "🧼 Produit multi-usage (ménage, lessive, vaisselle, véhicule, etc)", 
     color: "#2563eb", 
     bgColor: "#1fb6b7", 
     image: "/Divin Cleanser 2.png",
@@ -1337,19 +1406,19 @@ export const products: Product[] = [
   { 
     id: 1, 
     title: "GENTLE BLISS", 
-    desc: "Gentle foaming hand soap - 500ml / Savon mousse doux parfumé pour les mains", 
+    desc: "🌸 Le linge qui sent bon, même après une longue journée ? Gentle Bliss fait le travail.", 
     color: "#dc2626", 
     bgColor: "#15c6e1", 
     image: "/Gentle Bliss.png",
     depthImage: "/Gentle Bliss Depth.png",
-    isLight: true,
+    isLight: false,
     price: 2000,
     isActive: true
   },
   { 
     id: 2, 
     title: "PUSBA", 
-    desc: "Eau de Javel désinfectante - 250ml / Powerful disinfectant bleach solution", 
+    desc: "L’hygiène n’est pas un luxe. Pusba, c’est la sécurité du quotidien, version camerounaise.", 
     color: "#16a34a", 
     bgColor: "#c3d5e5", 
     image: "/Pusba.png",
@@ -1361,7 +1430,7 @@ export const products: Product[] = [
   { 
     id: 3, 
     title: "ENJOY", 
-    desc: "Le vinaigre alimentaire de table qui respecte nos habitudes de cuisine - 400g", 
+    desc: "🍋 Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine. Simple, Efficace, Local", 
     color: "#16a34a", 
     bgColor: "#aeb48d", 
     image: "/Enjoy 2.png",

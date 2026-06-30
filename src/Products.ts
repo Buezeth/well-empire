@@ -17,7 +17,7 @@ export const products: Product[] = [
   { 
     id: 0, 
     title: "DIVINE CLEANSER", 
-    desc: "For multi-purpose cleaning - 1L / Pour un nettoyage multi-usage ultra-efficace", 
+    desc: "🧼 Produit multi-usage (ménage, lessive, vaisselle, véhicule, etc)", 
     color: "#2563eb", 
     bgColor: "#1fb6b7", 
     image: "/Divin Cleanser 2.png",
@@ -29,19 +29,19 @@ export const products: Product[] = [
   { 
     id: 1, 
     title: "GENTLE BLISS", 
-    desc: "Gentle foaming hand soap - 500ml / Savon mousse doux parfumé pour les mains", 
+    desc: "🌸 Le linge qui sent bon, même après une longue journée ? Gentle Bliss fait le travail.", 
     color: "#dc2626", 
     bgColor: "#15c6e1", 
     image: "/Gentle Bliss.png",
     depthImage: "/Gentle Bliss Depth.png",
-    isLight: true,
+    isLight: false,
     price: 2000,
     isActive: true
   },
   { 
     id: 2, 
     title: "PUSBA", 
-    desc: "Eau de Javel désinfectante - 250ml / Powerful disinfectant bleach solution", 
+    desc: "L’hygiène n’est pas un luxe. Pusba, c’est la sécurité du quotidien, version camerounaise.", 
     color: "#16a34a", 
     bgColor: "#c3d5e5", 
     image: "/Pusba.png",
@@ -53,7 +53,7 @@ export const products: Product[] = [
   { 
     id: 3, 
     title: "ENJOY", 
-    desc: "Le vinaigre alimentaire de table qui respecte nos habitudes de cuisine - 400g", 
+    desc: "🍋 Enjoy, le vinaigre alimentaire qui respecte nos habitudes de cuisine. Simple, Efficace, Local", 
     color: "#16a34a", 
     bgColor: "#aeb48d", 
     image: "/Enjoy 2.png",
