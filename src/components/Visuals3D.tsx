@@ -311,7 +311,7 @@ const Visuals3D = () => {
                       image={product.image}
                       depthImage={product.depthImage}
                       active={isActive}
-                      color={product.color}
+                      color={product.bgColor}
                     />
                   )}
                 </motion.div>

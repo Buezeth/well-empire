@@ -15,6 +15,7 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const programRef = useRef<WebGLProgram | null>(null);
   const [aspectRatio, setAspectRatio] = useState(1);
+  const [loading, setLoading] = useState(true); // Loading state tracker
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -164,7 +165,10 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
       loadTextureImage(image, imageTex!),
       loadTextureImage(depthImage, depthTex!)
     ]).then(() => {
-      if (isCurrent) render();
+      if (isCurrent) {
+        setLoading(false); // Stop loading when textures are uploaded
+        render();
+      }
     });
 
     const resizeObserver = new ResizeObserver(() => {
@@ -218,12 +222,22 @@ const DepthMapViewer: React.FC<DepthMapViewerProps> = ({ image, depthImage, acti
 
   return (
     <div 
-      className="absolute inset-0 m-auto max-w-full max-h-full pointer-events-none"
+      className="absolute inset-0 m-auto max-w-full max-h-full flex items-center justify-center pointer-events-none"
       style={{ aspectRatio: `${aspectRatio}` }}
     >
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-50">
+          <div 
+            className="w-12 h-12 rounded-full border-4 border-white/10 animate-spin"
+            style={{ borderTopColor: color }} // Dynamically uses the product's color theme
+          />
+        </div>
+      )}
       <canvas 
         ref={canvasRef} 
-        className="w-full h-full pointer-events-none block"
+        className={`w-full h-full pointer-events-none block transition-opacity duration-300 ${
+          loading ? 'opacity-0' : 'opacity-100'
+        }`}
       />
     </div>
   );
